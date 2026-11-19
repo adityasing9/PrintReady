@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { usePrintReady } from '../../context/PrintReadyContext';
 import { buildMailtoUrl, buildWhatsAppUrl } from '../../domain/fileValidation';
+import { dispatchPrintJob } from '../../services/fileSharingService';
 import { STATUS_LABELS } from '../../domain/orderStateMachine';
 import { formatCurrency } from '../../domain/printCalculator';
 import { PrintOrder } from '../../domain/types';
@@ -169,33 +170,54 @@ export function CustomerOrdersView() {
 
                 {/* Direct WhatsApp & Email Redirect Actions + Contextual Actions */}
                 <div className="flex flex-wrap items-center gap-2.5">
-                  <a
-                    href={buildWhatsAppUrl(contacts.whatsapp, shareMessage)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() =>
-                      notify('Opening WhatsApp', `Prepared message for ${activeOrder.shopName}.`, 'info')
-                    }
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      notify('Dispatching...', `Attaching documents for ${activeOrder.shopName}...`, 'info');
+                      try {
+                        const res = await dispatchPrintJob({
+                          documentIds: activeOrder.items.map((i) => i.documentId),
+                          documentNames: activeOrder.items.map((i) => i.documentName),
+                          text: shareMessage,
+                          target: 'whatsapp',
+                          phone: contacts.whatsapp,
+                        });
+                        notify('WhatsApp Opened', res.message || 'WhatsApp opened with documents attached.', 'success');
+                      } catch (err) {
+                        console.error('WhatsApp error:', err);
+                        notify('Error', 'Could not open WhatsApp.', 'error');
+                      }
+                    }}
                     className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg transition-colors whitespace-nowrap"
                   >
                     <MessageCircle className="w-3.5 h-3.5" />
                     Send on WhatsApp
-                  </a>
+                  </button>
 
-                  <a
-                    href={buildMailtoUrl(
-                      contacts.email,
-                      `Print Request ${activeOrder.orderNumber} — ${userProfile.displayName}`,
-                      shareMessage
-                    )}
-                    onClick={() =>
-                      notify('Opening Email App', `Prepared email draft for ${activeOrder.shopName}.`, 'info')
-                    }
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      notify('Dispatching...', `Attaching documents for ${activeOrder.shopName}...`, 'info');
+                      try {
+                        const res = await dispatchPrintJob({
+                          documentIds: activeOrder.items.map((i) => i.documentId),
+                          documentNames: activeOrder.items.map((i) => i.documentName),
+                          text: shareMessage,
+                          target: 'email',
+                          email: contacts.email,
+                          subject: `Print Request ${activeOrder.orderNumber} — ${userProfile.displayName}`,
+                        });
+                        notify('Email Opened', res.message || 'Email composer opened with documents attached.', 'success');
+                      } catch (err) {
+                        console.error('Email error:', err);
+                        notify('Error', 'Could not open email.', 'error');
+                      }
+                    }}
                     className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-indigo-700 hover:bg-indigo-800 rounded-lg transition-colors whitespace-nowrap"
                   >
                     <Mail className="w-3.5 h-3.5" />
                     Send via Email
-                  </a>
+                  </button>
 
                   {activeOrder.status === 'price_pending_approval' && (
                     <button

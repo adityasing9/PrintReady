@@ -27,6 +27,7 @@ import {
 import { PDFDocument } from 'pdf-lib';
 import { usePrintReady } from '../../context/PrintReadyContext';
 import { buildMailtoUrl, buildWhatsAppUrl, formatFileSize } from '../../domain/fileValidation';
+import { dispatchPrintJob } from '../../services/fileSharingService';
 import {
   ColorMode,
   DEFAULT_PRINT_SETTINGS,
@@ -294,43 +295,30 @@ export function PrintQueueView() {
       shopName: shopNameDisplay,
       shopContact: recipientPhone,
       method: 'whatsapp',
+      documentIds: selectedItems.map((i) => i.documentId),
       fileNames: selectedItems.map((i) => i.documentName),
       totalFiles: selectedItems.length,
       totalCopies: selectedItems.reduce((acc, i) => acc + i.settings.copies, 0),
       message: generatedBrief,
     });
 
-    // Check if Web Share API with files is supported (e.g. mobile)
-    const canShareFiles = typeof navigator !== 'undefined' && 'canShare' in navigator;
-    if (canShareFiles) {
-      try {
-        const fileObjects: File[] = [];
-        for (const item of selectedItems) {
-          const blob = await getFileBlob(item.documentId);
-          if (blob) {
-            fileObjects.push(new File([blob], item.documentName, { type: blob.type }));
-          }
-        }
-        if (fileObjects.length > 0 && navigator.canShare({ files: fileObjects })) {
-          await navigator.share({
-            title: `PrintReady - ${selectedItems.length} files`,
-            text: generatedBrief,
-            files: fileObjects,
-          });
-          setShowSendModal(false);
-          notify('Sent via Share Sheet', 'Files handed over to your chosen app.', 'success');
-          return;
-        }
-      } catch (err) {
-        console.warn('Native share cancelled or failed, falling back to WhatsApp link:', err);
-      }
-    }
-
-    // Direct WhatsApp web/app link fallback
-    const url = buildWhatsAppUrl(recipientPhone, generatedBrief);
-    window.open(url, '_blank');
+    notify('Dispatching...', 'Attaching documents for WhatsApp...', 'info');
     setShowSendModal(false);
-    notify('WhatsApp Opened', 'Order brief loaded in WhatsApp. Attach files if prompted.', 'success');
+
+    try {
+      const res = await dispatchPrintJob({
+        documentIds: selectedItems.map((i) => i.documentId),
+        documentNames: selectedItems.map((i) => i.documentName),
+        text: generatedBrief,
+        target: 'whatsapp',
+        phone: recipientPhone,
+      });
+
+      notify('WhatsApp Dispatched', res.message || 'WhatsApp opened with documents attached.', 'success');
+    } catch (err) {
+      console.error('WhatsApp dispatch error:', err);
+      notify('Dispatch Failed', 'Could not open WhatsApp with attachments. Please try again.', 'error');
+    }
   };
 
   const executeSendEmail = async () => {
@@ -358,6 +346,7 @@ export function PrintQueueView() {
       shopName: shopNameDisplay,
       shopContact: recipientEmail,
       method: 'email',
+      documentIds: selectedItems.map((i) => i.documentId),
       fileNames: selectedItems.map((i) => i.documentName),
       totalFiles: selectedItems.length,
       totalCopies: selectedItems.reduce((acc, i) => acc + i.settings.copies, 0),
@@ -365,54 +354,54 @@ export function PrintQueueView() {
     });
 
     const subject = `Print Request: ${selectedItems.length} File${selectedItems.length > 1 ? 's' : ''} (${shopNameDisplay})`;
-    const url = buildMailtoUrl(recipientEmail, subject, generatedBrief);
-    window.location.href = url;
+    notify('Dispatching...', 'Attaching documents for Email...', 'info');
     setShowSendModal(false);
-    notify('Email Draft Created', 'Default email app opened with your print instructions.', 'success');
+
+    try {
+      const res = await dispatchPrintJob({
+        documentIds: selectedItems.map((i) => i.documentId),
+        documentNames: selectedItems.map((i) => i.documentName),
+        text: generatedBrief,
+        target: 'email',
+        email: recipientEmail,
+        subject,
+      });
+
+      notify('Email Dispatched', res.message || 'Email composer opened with documents attached.', 'success');
+    } catch (err) {
+      console.error('Email dispatch error:', err);
+      notify('Dispatch Failed', 'Could not open email app with attachments. Please try again.', 'error');
+    }
   };
 
   const executeNativeShare = async () => {
-    if (typeof navigator === 'undefined' || !navigator.share) {
-      notify('Share Not Supported', 'Web Share is not supported on this browser. Use WhatsApp or Email buttons.', 'warning');
-      return;
-    }
+    addSentJob({
+      shopName: shopNameDisplay,
+      shopContact: 'Direct Share',
+      method: 'share',
+      documentIds: selectedItems.map((i) => i.documentId),
+      fileNames: selectedItems.map((i) => i.documentName),
+      totalFiles: selectedItems.length,
+      totalCopies: selectedItems.reduce((acc, i) => acc + i.settings.copies, 0),
+      message: generatedBrief,
+    });
+
+    notify('Preparing Share Sheet...', 'Attaching documents...', 'info');
+    setShowSendModal(false);
 
     try {
-      const fileObjects: File[] = [];
-      for (const item of selectedItems) {
-        const blob = await getFileBlob(item.documentId);
-        if (blob) {
-          fileObjects.push(new File([blob], item.documentName, { type: blob.type }));
-        }
-      }
-
-      if (fileObjects.length > 0 && navigator.canShare && navigator.canShare({ files: fileObjects })) {
-        await navigator.share({
-          title: `PrintReady - ${selectedItems.length} files`,
-          text: generatedBrief,
-          files: fileObjects,
-        });
-      } else {
-        await navigator.share({
-          title: `PrintReady - ${selectedItems.length} files`,
-          text: generatedBrief,
-        });
-      }
-
-      addSentJob({
-        shopName: shopNameDisplay,
-        shopContact: 'Direct Share',
-        method: 'share',
-        fileNames: selectedItems.map((i) => i.documentName),
-        totalFiles: selectedItems.length,
-        totalCopies: selectedItems.reduce((acc, i) => acc + i.settings.copies, 0),
-        message: generatedBrief,
+      const res = await dispatchPrintJob({
+        documentIds: selectedItems.map((i) => i.documentId),
+        documentNames: selectedItems.map((i) => i.documentName),
+        text: generatedBrief,
+        target: 'chooser',
+        subject: `Print Request (${selectedItems.length} files)`,
       });
 
-      setShowSendModal(false);
-      notify('Shared Successfully', 'Print job shared.', 'success');
+      notify('Shared Successfully', res.message || 'Share sheet opened.', 'success');
     } catch (err) {
-      console.warn('Share error:', err);
+      console.error('Share error:', err);
+      notify('Share Failed', 'Could not open share sheet.', 'error');
     }
   };
 

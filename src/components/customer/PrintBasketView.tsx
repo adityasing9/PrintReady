@@ -21,6 +21,7 @@ import {
   formatFileSize,
   renderShareTemplate,
 } from '../../domain/fileValidation';
+import { dispatchPrintJob } from '../../services/fileSharingService';
 import { calculateOrderEstimate, formatCurrency, parsePageRange } from '../../domain/printCalculator';
 import {
   BindingOption,
@@ -192,20 +193,63 @@ export function PrintBasketView() {
     }
   );
 
+  const handleSendWhatsApp = async (phone: string, msg: string) => {
+    if (basket.length === 0 || hasInvalidPageRange) {
+      notify('Check your print basket', 'Add valid documents before redirecting to WhatsApp.', 'warning');
+      return;
+    }
+    notify('Dispatching...', 'Attaching documents for WhatsApp...', 'info');
+    try {
+      const res = await dispatchPrintJob({
+        documentIds: basket.map((b) => b.documentId),
+        documentNames: basket.map((b) => b.documentName),
+        text: msg,
+        target: 'whatsapp',
+        phone,
+      });
+      notify('WhatsApp Opened', res.message || 'WhatsApp opened with documents attached.', 'success');
+    } catch (err) {
+      console.error('WhatsApp error:', err);
+      notify('Error', 'Could not open WhatsApp with attachments.', 'error');
+    }
+  };
+
+  const handleSendEmail = async (email: string, msg: string) => {
+    if (basket.length === 0 || hasInvalidPageRange) {
+      notify('Check your print basket', 'Add valid documents before redirecting to Email.', 'warning');
+      return;
+    }
+    notify('Dispatching...', 'Attaching documents for Email...', 'info');
+    try {
+      const res = await dispatchPrintJob({
+        documentIds: basket.map((b) => b.documentId),
+        documentNames: basket.map((b) => b.documentName),
+        text: msg,
+        target: 'email',
+        email,
+        subject: `Print Request (${basket.length} file${basket.length > 1 ? 's' : ''}) — ${userProfile.displayName}`,
+      });
+      notify('Email Opened', res.message || 'Email composer opened with documents attached.', 'success');
+    } catch (err) {
+      console.error('Email error:', err);
+      notify('Error', 'Could not open email with attachments.', 'error');
+    }
+  };
+
   const handleNativeWebShare = async () => {
-    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-      try {
-        await navigator.share({
-          title: `PrintReady Job — ${basket.length} document(s)`,
-          text: composedShareText,
-        });
-        notify('Shared via system sheet', 'Print instructions sent to native share sheet.', 'success');
-      } catch {
-        notify('Share cancelled', 'You can also copy the message or open WhatsApp/Email below.', 'info');
-      }
-    } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      await navigator.clipboard.writeText(composedShareText);
-      notify('Copied to clipboard', 'Native share sheet is unavailable in this browser; message copied.', 'info');
+    notify('Dispatching...', 'Preparing documents for share sheet...', 'info');
+    try {
+      const res = await dispatchPrintJob({
+        documentIds: basket.map((b) => b.documentId),
+        documentNames: basket.map((b) => b.documentName),
+        text: composedShareText,
+        target: 'chooser',
+        subject: `PrintReady Job — ${basket.length} document(s)`,
+      });
+      notify('Shared', res.message || 'Share sheet opened.', 'success');
+    } catch (err) {
+      console.error('Share error:', err);
+      notify('Error', 'Could not open share sheet.', 'error');
     }
   };
 
@@ -934,54 +978,29 @@ export function PrintBasketView() {
 
                 {/* Primary WhatsApp & Email Redirect Actions */}
                 <div className="space-y-2 pt-1">
-                  <a
-                    href={basket.length > 0 && !hasInvalidPageRange ? buildWhatsAppUrl(targetWhatsapp, fullMessage) : undefined}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-disabled={basket.length === 0 || hasInvalidPageRange}
-                    onClick={(e) => {
-                      if (basket.length === 0 || hasInvalidPageRange) {
-                        e.preventDefault();
-                        notify('Check your print basket', 'Add valid documents before redirecting to WhatsApp.', 'warning');
-                        return;
-                      }
-                      notify('Opening WhatsApp', `Prepared print instructions for ${targetName}. Attach files & tap Send.`, 'success');
-                    }}
+                  <button
+                    type="button"
+                    disabled={basket.length === 0 || hasInvalidPageRange}
+                    onClick={() => handleSendWhatsApp(targetWhatsapp, fullMessage)}
                     className={`w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg transition-colors ${
                       basket.length === 0 || hasInvalidPageRange ? 'opacity-50 pointer-events-none' : ''
                     }`}
                   >
                     <MessageCircle className="w-4 h-4" />
                     Send via WhatsApp
-                  </a>
+                  </button>
 
-                  <a
-                    href={
-                      basket.length > 0 && !hasInvalidPageRange
-                        ? buildMailtoUrl(
-                            targetEmail,
-                            `Print Request (${basket.length} file${basket.length > 1 ? 's' : ''}) — ${userProfile.displayName}`,
-                            fullMessage,
-                            emailCc
-                          )
-                        : undefined
-                    }
-                    aria-disabled={basket.length === 0 || hasInvalidPageRange}
-                    onClick={(e) => {
-                      if (basket.length === 0 || hasInvalidPageRange) {
-                        e.preventDefault();
-                        notify('Check your print basket', 'Add valid documents before redirecting to Email.', 'warning');
-                        return;
-                      }
-                      notify('Opening Email App', `Prepared email draft for ${targetName}. Attach files & tap Send.`, 'success');
-                    }}
+                  <button
+                    type="button"
+                    disabled={basket.length === 0 || hasInvalidPageRange}
+                    onClick={() => handleSendEmail(targetEmail, fullMessage)}
                     className={`w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-indigo-700 hover:bg-indigo-800 rounded-lg transition-colors ${
                       basket.length === 0 || hasInvalidPageRange ? 'opacity-50 pointer-events-none' : ''
                     }`}
                   >
                     <Mail className="w-4 h-4" />
                     Send via Email
-                  </a>
+                  </button>
 
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <button
@@ -1106,29 +1125,53 @@ export function PrintBasketView() {
             </div>
 
             <div className="flex flex-wrap gap-2.5">
-              <a
-                href={buildWhatsAppUrl(activeShareShop?.whatsapp || '', composedShareText)}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => notify('WhatsApp composer prepared', 'Confirm attachment and tap Send in WhatsApp.', 'info')}
+              <button
+                type="button"
+                onClick={async () => {
+                  notify('Dispatching...', 'Preparing documents for WhatsApp...', 'info');
+                  try {
+                    const res = await dispatchPrintJob({
+                      documentIds: basket.map((b) => b.documentId),
+                      documentNames: basket.map((b) => b.documentName),
+                      text: composedShareText,
+                      target: 'whatsapp',
+                      phone: activeShareShop?.whatsapp || '',
+                    });
+                    notify('WhatsApp Opened', res.message || 'WhatsApp opened with documents attached.', 'success');
+                  } catch (err) {
+                    console.error('WhatsApp error:', err);
+                    notify('Error', 'Could not open WhatsApp.', 'error');
+                  }
+                }}
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg"
               >
                 <MessageCircle className="w-3.5 h-3.5" />
                 Open WhatsApp
-              </a>
-              <a
-                href={buildMailtoUrl(
-                  activeShareShop?.email || '',
-                  `Print Request — ${basket.length} file(s) from ${userProfile.displayName}`,
-                  composedShareText,
-                  emailCc
-                )}
-                onClick={() => notify('Email composer prepared', 'Recipient, subject, and print instructions populated.', 'info')}
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  notify('Dispatching...', 'Preparing documents for Email...', 'info');
+                  try {
+                    const res = await dispatchPrintJob({
+                      documentIds: basket.map((b) => b.documentId),
+                      documentNames: basket.map((b) => b.documentName),
+                      text: composedShareText,
+                      target: 'email',
+                      email: activeShareShop?.email || '',
+                      subject: `Print Request — ${basket.length} file(s) from ${userProfile.displayName}`,
+                    });
+                    notify('Email Opened', res.message || 'Email composer opened with documents attached.', 'success');
+                  } catch (err) {
+                    console.error('Email error:', err);
+                    notify('Error', 'Could not open email.', 'error');
+                  }
+                }}
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-indigo-700 hover:bg-indigo-800 rounded-lg"
               >
                 <Mail className="w-3.5 h-3.5" />
                 Open Email Composer
-              </a>
+              </button>
               <button
                 type="button"
                 onClick={handleNativeWebShare}

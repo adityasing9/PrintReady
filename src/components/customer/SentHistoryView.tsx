@@ -14,23 +14,28 @@ import {
 } from 'lucide-react';
 import { usePrintReady } from '../../context/PrintReadyContext';
 import { buildMailtoUrl, buildWhatsAppUrl } from '../../domain/fileValidation';
+import { dispatchPrintJob } from '../../services/fileSharingService';
 
 export function SentHistoryView() {
   const { sentHistory, clearSentHistory, notify } = usePrintReady();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const handleResend = (job: typeof sentHistory[0]) => {
-    if (job.method === 'whatsapp' && job.shopContact) {
-      const url = buildWhatsAppUrl(job.shopContact, job.message);
-      window.open(url, '_blank');
-      notify('WhatsApp Opened', 'Re-sending print order brief.', 'success');
-    } else if (job.method === 'email' && job.shopContact) {
-      const subject = `Print Request: ${job.totalFiles} files (${job.shopName})`;
-      const url = buildMailtoUrl(job.shopContact, subject, job.message);
-      window.location.href = url;
-      notify('Email Opened', 'Re-sending print order brief.', 'success');
-    } else {
-      notify('Re-send', 'Please open WhatsApp or Mail with your saved shop.', 'info');
+  const handleResend = async (job: typeof sentHistory[0]) => {
+    notify('Dispatching...', `Re-sending print order to ${job.shopName}...`, 'info');
+    try {
+      const res = await dispatchPrintJob({
+        documentIds: job.documentIds || [],
+        documentNames: job.fileNames || [],
+        text: job.message,
+        target: job.method === 'email' ? 'email' : job.method === 'whatsapp' ? 'whatsapp' : 'chooser',
+        phone: job.method === 'whatsapp' ? job.shopContact : undefined,
+        email: job.method === 'email' ? job.shopContact : undefined,
+        subject: `Print Request: ${job.totalFiles} files (${job.shopName})`,
+      });
+      notify('Re-sent', res.message || 'Dispatch completed.', 'success');
+    } catch (err) {
+      console.error('Re-send error:', err);
+      notify('Re-send Failed', 'Could not dispatch order.', 'error');
     }
   };
 

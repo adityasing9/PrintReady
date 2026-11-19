@@ -166,6 +166,7 @@ export interface SentPrintJob {
   shopName: string;
   shopContact: string;
   method: 'whatsapp' | 'email' | 'share';
+  documentIds?: string[];
   fileNames: string[];
   totalFiles: number;
   totalCopies: number;

@@ -12,6 +12,12 @@ export interface ReleaseInfo {
   isNewer: boolean;
 }
 
+export function isNativeAndroid(): boolean {
+  if (typeof window === 'undefined') return false;
+  const cap = (window as unknown as { Capacitor?: { getPlatform?: () => string; isNativePlatform?: () => boolean } }).Capacitor;
+  return Boolean(cap?.isNativePlatform && cap?.getPlatform && cap.getPlatform() === 'android');
+}
+
 export function isVersionGreater(remote: string, current: string): boolean {
   const cleanRemote = remote.replace(/^v/i, '').trim();
   const cleanCurrent = current.replace(/^v/i, '').trim();
