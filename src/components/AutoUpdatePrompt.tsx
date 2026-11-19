@@ -40,7 +40,12 @@ export function AutoUpdatePrompt() {
     setIsUpdating(true);
     setErrorMsg('');
     try {
-      await installUpdate(release.apkDownloadUrl, (msg) => setUpdateStatus(msg));
+      installUpdate(release.apkDownloadUrl);
+      setUpdateStatus('Downloading...');
+      setTimeout(() => {
+        setIsUpdating(false);
+        setDismissed(true);
+      }, 2000);
     } catch (err) {
       console.error('Update failed:', err);
       setErrorMsg(err instanceof Error ? err.message : 'Update installation failed.');
