@@ -1,6 +1,5 @@
-import { registerPlugin } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { getFileBlob } from '../utils/fileStorage';
-import { buildMailtoUrl, buildWhatsAppUrl } from '../domain/fileValidation';
 
 export interface ShareFileInput {
   name: string;
@@ -16,17 +15,17 @@ interface NativeSharePluginInterface {
     phone?: string;
     email?: string;
     subject?: string;
-  }): Promise<{ success: boolean }>;
+  }): Promise<{ success: boolean; count?: number }>;
 }
 
 const NativeShare = registerPlugin<NativeSharePluginInterface>('NativeShare');
 
 export function isNativeAndroid(): boolean {
-  if (typeof window === 'undefined') return false;
-  const cap = (window as unknown as {
-    Capacitor?: { getPlatform?: () => string; isNativePlatform?: () => boolean };
-  }).Capacitor;
-  return Boolean(cap?.isNativePlatform && cap?.getPlatform && cap.getPlatform() === 'android');
+  try {
+    return Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -48,7 +47,7 @@ export async function blobToBase64(blob: Blob): Promise<string> {
 export interface DispatchPrintJobOptions {
   documentIds: string[];
   documentNames?: string[];
-  text: string;
+  text?: string;
   target: 'whatsapp' | 'email' | 'chooser';
   phone?: string;
   email?: string;
@@ -58,20 +57,19 @@ export interface DispatchPrintJobOptions {
 export interface DispatchResult {
   success: boolean;
   fileCount: number;
-  mode: 'native' | 'web-share' | 'download-fallback' | 'text-only';
+  mode: 'native' | 'web-share' | 'download-fallback';
   message?: string;
 }
 
 /**
- * Unified file and message dispatch:
- * - On Android Native: Uses native FileProvider and ACTION_SEND/ACTION_SEND_MULTIPLE to attach real files
- * - On Mobile Browsers: Uses Web Share API with File objects where supported
- * - On Desktop Browsers: Downloads files directly to disk and opens WhatsApp/Email with pre-filled text
+ * Unified file dispatch:
+ * Sends ALL selected files at once directly to WhatsApp, Email, or Share sheet.
+ * NEVER does text-only redirects.
  */
 export async function dispatchPrintJob(options: DispatchPrintJobOptions): Promise<DispatchResult> {
-  const { documentIds, documentNames = [], text, target, phone, email, subject } = options;
+  const { documentIds, documentNames = [], text = '', target, phone, email, subject } = options;
 
-  // 1. Gather blobs from IndexedDB
+  // 1. Gather all file blobs from IndexedDB
   const blobsWithNames: { name: string; blob: Blob }[] = [];
   for (let i = 0; i < documentIds.length; i++) {
     const id = documentIds[i];
@@ -86,46 +84,46 @@ export async function dispatchPrintJob(options: DispatchPrintJobOptions): Promis
     }
   }
 
-  // 2. Android Native execution
-  if (isNativeAndroid() && blobsWithNames.length > 0) {
-    try {
-      const filesForNative: ShareFileInput[] = [];
-      for (const item of blobsWithNames) {
-        const base64 = await blobToBase64(item.blob);
-        filesForNative.push({
-          name: item.name,
-          mimeType: item.blob.type || 'application/octet-stream',
-          base64,
-        });
-      }
-
-      await NativeShare.shareFiles({
-        files: filesForNative,
-        text,
-        target,
-        phone,
-        email,
-        subject: subject || `Print Request (${filesForNative.length} file${filesForNative.length > 1 ? 's' : ''})`,
-      });
-
-      return {
-        success: true,
-        fileCount: filesForNative.length,
-        mode: 'native',
-        message:
-          target === 'whatsapp'
-            ? 'WhatsApp opened with documents attached.'
-            : target === 'email'
-            ? 'Email app opened with documents attached.'
-            : 'Share sheet opened with documents attached.',
-      };
-    } catch (err) {
-      console.warn('NativeShare failed, trying fallback:', err);
-    }
+  if (blobsWithNames.length === 0) {
+    throw new Error('No files found to send. Please upload documents first.');
   }
 
-  // 3. Web Share API with files (Mobile browsers like Chrome on Android, Safari on iOS)
-  if (typeof navigator !== 'undefined' && 'canShare' in navigator && blobsWithNames.length > 0) {
+  // 2. Android Native Execution (FileProvider + ACTION_SEND_MULTIPLE with ClipData)
+  if (isNativeAndroid()) {
+    const filesForNative: ShareFileInput[] = [];
+    for (const item of blobsWithNames) {
+      const base64 = await blobToBase64(item.blob);
+      filesForNative.push({
+        name: item.name,
+        mimeType: item.blob.type || 'application/octet-stream',
+        base64,
+      });
+    }
+
+    const res = await NativeShare.shareFiles({
+      files: filesForNative,
+      text,
+      target,
+      phone,
+      email,
+      subject: subject || `Print Request (${filesForNative.length} file${filesForNative.length > 1 ? 's' : ''})`,
+    });
+
+    return {
+      success: true,
+      fileCount: res.count || filesForNative.length,
+      mode: 'native',
+      message:
+        target === 'whatsapp'
+          ? `Redirected ${filesForNative.length} file(s) to WhatsApp.`
+          : target === 'email'
+          ? `Redirected ${filesForNative.length} file(s) to Email.`
+          : `Redirected ${filesForNative.length} file(s) to Share sheet.`,
+    };
+  }
+
+  // 3. Web Share API with files (Mobile browsers like Chrome on Android)
+  if (typeof navigator !== 'undefined' && 'canShare' in navigator) {
     try {
       const fileObjects = blobsWithNames.map(
         (b) => new File([b.blob], b.name, { type: b.blob.type || 'application/octet-stream' })
@@ -133,68 +131,40 @@ export async function dispatchPrintJob(options: DispatchPrintJobOptions): Promis
       if (navigator.canShare({ files: fileObjects })) {
         await navigator.share({
           title: subject || 'PrintReady Documents',
-          text,
           files: fileObjects,
         });
         return {
           success: true,
           fileCount: fileObjects.length,
           mode: 'web-share',
-          message: 'Files handed over to your chosen app.',
+          message: `Shared ${fileObjects.length} file(s).`,
         };
       }
     } catch (err) {
-      console.warn('Web Share API error, using web fallback:', err);
+      console.warn('Web Share API error:', err);
     }
   }
 
-  // 4. Web browser fallback: download files to disk so customer has them, then open WhatsApp/Email
-  if (blobsWithNames.length > 0) {
-    for (const item of blobsWithNames) {
-      try {
-        const url = URL.createObjectURL(item.blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = item.name;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
-      } catch (dlErr) {
-        console.warn('Failed to auto-download item:', dlErr);
-      }
-    }
-  }
-
-  const cleanSubject = subject || `Print Request (${blobsWithNames.length} file${blobsWithNames.length > 1 ? 's' : ''})`;
-
-  if (target === 'whatsapp') {
-    const waUrl = buildWhatsAppUrl(phone || '', text);
-    window.open(waUrl, '_blank');
-  } else if (target === 'email') {
-    const mailUrl = buildMailtoUrl(email || '', cleanSubject, text);
-    window.location.href = mailUrl;
-  } else {
-    // Chooser fallback
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try {
-        await navigator.share({ title: cleanSubject, text });
-      } catch {
-        // user cancelled
-      }
-    } else {
-      const waUrl = buildWhatsAppUrl(phone || '', text);
-      window.open(waUrl, '_blank');
+  // 4. Desktop/Web fallback: Download all selected files directly to device
+  for (const item of blobsWithNames) {
+    try {
+      const url = URL.createObjectURL(item.blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = item.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (dlErr) {
+      console.warn('Failed to auto-download item:', dlErr);
     }
   }
 
   return {
     success: true,
     fileCount: blobsWithNames.length,
-    mode: blobsWithNames.length > 0 ? 'download-fallback' : 'text-only',
-    message:
-      blobsWithNames.length > 0
-        ? 'Files saved to your downloads folder. Please attach them in the opened app.'
-        : 'Message prepared.',
+    mode: 'download-fallback',
+    message: `${blobsWithNames.length} file(s) saved to your device for printing.`,
   };
 }

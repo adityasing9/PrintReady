@@ -269,6 +269,10 @@ export function PrintQueueView() {
 
   // Execute Send
   const executeSendWhatsApp = async () => {
+    if (selectedItems.length === 0) {
+      notify('No Files Selected', 'Please select at least one document to send to the shop.', 'warning');
+      return;
+    }
     if (!recipientPhone.trim()) {
       notify('WhatsApp Number Required', 'Please select a shop or enter a WhatsApp phone number.', 'warning');
       return;
@@ -322,6 +326,10 @@ export function PrintQueueView() {
   };
 
   const executeSendEmail = async () => {
+    if (selectedItems.length === 0) {
+      notify('No Files Selected', 'Please select at least one document to send to the shop.', 'warning');
+      return;
+    }
     if (!recipientEmail.trim()) {
       notify('Email Address Required', 'Please select a shop or enter an email address.', 'warning');
       return;
@@ -375,6 +383,10 @@ export function PrintQueueView() {
   };
 
   const executeNativeShare = async () => {
+    if (selectedItems.length === 0) {
+      notify('No Files Selected', 'Please select at least one document to share.', 'warning');
+      return;
+    }
     addSentJob({
       shopName: shopNameDisplay,
       shopContact: 'Direct Share',

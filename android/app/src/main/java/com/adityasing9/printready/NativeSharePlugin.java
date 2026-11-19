@@ -1,5 +1,6 @@
 package com.adityasing9.printready;
 
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -31,9 +32,7 @@ public class NativeSharePlugin extends Plugin {
                 return;
             }
 
-            String text = call.getString("text", "");
             String target = call.getString("target", "chooser"); // "whatsapp", "email", "chooser"
-            String phone = call.getString("phone", "");
             String email = call.getString("email", "");
             String subject = call.getString("subject", "Print Request - Documents Attached");
 
@@ -43,7 +42,7 @@ public class NativeSharePlugin extends Plugin {
                 sharedDir.mkdirs();
             }
 
-            // Clean up previous shared files in cache
+            // Clean previous shared files in cache
             File[] existing = sharedDir.listFiles();
             if (existing != null) {
                 for (File f : existing) {
@@ -54,19 +53,21 @@ public class NativeSharePlugin extends Plugin {
             }
 
             ArrayList<Uri> uriList = new ArrayList<>();
-            String primaryMimeType = "*/*";
+            String primaryMimeType = null;
 
             for (int i = 0; i < filesArray.length(); i++) {
                 JSONObject fileObj = filesArray.getJSONObject(i);
-                String fileName = fileObj.getString("name");
+                String rawName = fileObj.getString("name");
                 String base64Data = fileObj.getString("base64");
                 String mimeType = fileObj.optString("mimeType", "*/*");
-                if (i == 0 && mimeType != null && !mimeType.isEmpty()) {
+
+                if (primaryMimeType == null && mimeType != null && !mimeType.isEmpty() && !mimeType.equals("*/*")) {
                     primaryMimeType = mimeType;
                 }
 
                 byte[] bytes = Base64.decode(base64Data, Base64.DEFAULT);
-                File destFile = new File(sharedDir, fileName);
+                String safeName = i + "_" + rawName.replaceAll("[\\\\/:*?\"<>|]", "_");
+                File destFile = new File(sharedDir, safeName);
                 FileOutputStream fos = new FileOutputStream(destFile);
                 fos.write(bytes);
                 fos.flush();
@@ -80,6 +81,11 @@ public class NativeSharePlugin extends Plugin {
                 uriList.add(contentUri);
             }
 
+            if (uriList.isEmpty()) {
+                call.reject("Could not prepare files");
+                return;
+            }
+
             Intent intent;
             if (uriList.size() > 1) {
                 intent = new Intent(Intent.ACTION_SEND_MULTIPLE);
@@ -87,16 +93,19 @@ public class NativeSharePlugin extends Plugin {
                 intent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, uriList);
             } else {
                 intent = new Intent(Intent.ACTION_SEND);
-                intent.setType(primaryMimeType);
+                intent.setType(primaryMimeType != null ? primaryMimeType : "*/*");
                 intent.putExtra(Intent.EXTRA_STREAM, uriList.get(0));
             }
 
+            // Set ClipData with all URIs to guarantee Android framework grants read permissions to all attachments
+            ClipData clipData = ClipData.newUri(context.getContentResolver(), "PrintReady Documents", uriList.get(0));
+            for (int i = 1; i < uriList.size(); i++) {
+                clipData.addItem(new ClipData.Item(uriList.get(i)));
+            }
+            intent.setClipData(clipData);
+
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-            if (text != null && !text.isEmpty()) {
-                intent.putExtra(Intent.EXTRA_TEXT, text);
-            }
 
             PackageManager pm = context.getPackageManager();
 
@@ -116,11 +125,8 @@ public class NativeSharePlugin extends Plugin {
 
                 if (pkg != null) {
                     intent.setPackage(pkg);
-                    if (phone != null && !phone.trim().isEmpty()) {
-                        String cleanDigits = phone.replaceAll("[^0-9]", "");
-                        if (!cleanDigits.isEmpty()) {
-                            intent.putExtra("jid", cleanDigits + "@s.whatsapp.net");
-                        }
+                    for (Uri u : uriList) {
+                        context.grantUriPermission(pkg, u, Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     }
                 }
             } else if ("email".equalsIgnoreCase(target)) {
@@ -146,23 +152,25 @@ public class NativeSharePlugin extends Plugin {
                 if ("whatsapp".equalsIgnoreCase(target) && intent.getPackage() != null) {
                     getActivity().startActivity(intent);
                 } else if ("email".equalsIgnoreCase(target)) {
-                    Intent chooser = Intent.createChooser(intent, "Send Email with Documents");
+                    Intent chooser = Intent.createChooser(intent, "Send Files to Print Shop");
+                    chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     getActivity().startActivity(chooser);
                 } else {
-                    Intent chooser = Intent.createChooser(intent, "Share Documents via...");
+                    Intent chooser = Intent.createChooser(intent, "Send Files to Print Shop");
+                    chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     getActivity().startActivity(chooser);
                 }
-                call.resolve(new JSObject().put("success", true));
+                call.resolve(new JSObject().put("success", true).put("count", uriList.size()));
             } catch (Exception launchEx) {
-                // Fallback to general system chooser if direct package failed
+                // Fallback to system chooser if direct package failed
                 intent.setPackage(null);
-                intent.removeExtra("jid");
-                Intent chooser = Intent.createChooser(intent, "Share Documents");
+                Intent chooser = Intent.createChooser(intent, "Send Files to Print Shop");
+                chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 getActivity().startActivity(chooser);
-                call.resolve(new JSObject().put("success", true));
+                call.resolve(new JSObject().put("success", true).put("count", uriList.size()));
             }
         } catch (Exception e) {
             call.reject("Failed to share files: " + e.getMessage(), e);
