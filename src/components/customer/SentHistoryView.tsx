@@ -13,7 +13,6 @@ import {
   Trash2,
 } from 'lucide-react';
 import { usePrintReady } from '../../context/PrintReadyContext';
-import { buildMailtoUrl, buildWhatsAppUrl } from '../../domain/fileValidation';
 import { dispatchPrintJob } from '../../services/fileSharingService';
 
 export function SentHistoryView() {

@@ -14,7 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { usePrintReady } from '../../context/PrintReadyContext';
-import { buildMailtoUrl, buildWhatsAppUrl } from '../../domain/fileValidation';
+import { dispatchPrintJob } from '../../services/fileSharingService';
 import { SavedShop } from '../../domain/types';
 
 export function SavedShopsView() {
@@ -245,14 +245,31 @@ export function SavedShopsView() {
                         <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
                         <span>WhatsApp: <strong>{shop.whatsapp}</strong></span>
                       </span>
-                      <a
-                        href={buildWhatsAppUrl(shop.whatsapp, 'Hello, I have documents to print.')}
-                        target="_blank"
-                        rel="noreferrer"
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (basket.length === 0) {
+                            notify('No Files in Queue', 'Upload files in Print Queue first to send them to this shop.', 'info');
+                            setActiveTab('queue');
+                            return;
+                          }
+                          notify('Dispatching Files...', `Redirecting ${basket.length} file(s) to ${shop.shopName} on WhatsApp...`, 'info');
+                          try {
+                            await dispatchPrintJob({
+                              documentIds: basket.map((b) => b.documentId),
+                              documentNames: basket.map((b) => b.documentName),
+                              target: 'whatsapp',
+                              phone: shop.whatsapp,
+                            });
+                          } catch (err) {
+                            console.error(err);
+                            notify('Dispatch Failed', 'Could not open WhatsApp with files.', 'error');
+                          }
+                        }}
                         className="text-emerald-600 hover:underline inline-flex items-center gap-1 text-[11px] font-semibold"
                       >
-                        Chat <ExternalLink className="w-3 h-3" />
-                      </a>
+                        Send Files <ExternalLink className="w-3 h-3" />
+                      </button>
                     </div>
                   )}
 
@@ -262,12 +279,32 @@ export function SavedShopsView() {
                         <Mail className="w-3.5 h-3.5 text-indigo-600" />
                         <span>Email: <strong>{shop.email}</strong></span>
                       </span>
-                      <a
-                        href={buildMailtoUrl(shop.email, 'Print Inquiry', 'Hello, I would like to print documents.')}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (basket.length === 0) {
+                            notify('No Files in Queue', 'Upload files in Print Queue first to send them to this shop.', 'info');
+                            setActiveTab('queue');
+                            return;
+                          }
+                          notify('Dispatching Files...', `Redirecting ${basket.length} file(s) to ${shop.shopName} via Email...`, 'info');
+                          try {
+                            await dispatchPrintJob({
+                              documentIds: basket.map((b) => b.documentId),
+                              documentNames: basket.map((b) => b.documentName),
+                              target: 'email',
+                              email: shop.email,
+                              subject: `Print Request (${basket.length} files) for ${shop.shopName}`,
+                            });
+                          } catch (err) {
+                            console.error(err);
+                            notify('Dispatch Failed', 'Could not open Email with files.', 'error');
+                          }
+                        }}
                         className="text-indigo-600 hover:underline inline-flex items-center gap-1 text-[11px] font-semibold"
                       >
-                        Email <ExternalLink className="w-3 h-3" />
-                      </a>
+                        Send Files <ExternalLink className="w-3 h-3" />
+                      </button>
                     </div>
                   )}
 

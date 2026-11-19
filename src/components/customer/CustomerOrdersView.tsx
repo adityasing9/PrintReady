@@ -12,7 +12,6 @@ import {
   X,
 } from 'lucide-react';
 import { usePrintReady } from '../../context/PrintReadyContext';
-import { buildMailtoUrl, buildWhatsAppUrl } from '../../domain/fileValidation';
 import { dispatchPrintJob } from '../../services/fileSharingService';
 import { STATUS_LABELS } from '../../domain/orderStateMachine';
 import { formatCurrency } from '../../domain/printCalculator';

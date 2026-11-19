@@ -17,7 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import { usePrintReady } from '../../context/PrintReadyContext';
-import { buildMailtoUrl, buildWhatsAppUrl } from '../../domain/fileValidation';
+import { dispatchPrintJob } from '../../services/fileSharingService';
 import { formatCurrency } from '../../domain/printCalculator';
 import { RegisteredShop } from '../../domain/types';
 
@@ -30,6 +30,7 @@ export function ShopDiscoveryView() {
     toggleSavedShopFavourite,
     setDefaultSavedShop,
     deleteSavedShop,
+    basket,
     setActiveTab,
     notify,
   } = usePrintReady();
@@ -351,26 +352,63 @@ export function ShopDiscoveryView() {
                         Profile & Rates
                       </button>
                       {shop.whatsapp && (
-                        <a
-                          href={buildWhatsAppUrl(shop.whatsapp, `Hello ${shop.name}, I have documents to print via PrintReady.`)}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (basket.length === 0) {
+                              notify('No Files in Queue', 'Upload files in Print Queue first to send them to this shop.', 'info');
+                              setActiveTab('queue');
+                              return;
+                            }
+                            notify('Dispatching Files...', `Redirecting ${basket.length} file(s) to ${shop.name} on WhatsApp...`, 'info');
+                            try {
+                              await dispatchPrintJob({
+                                documentIds: basket.map((b) => b.documentId),
+                                documentNames: basket.map((b) => b.documentName),
+                                target: 'whatsapp',
+                                phone: shop.whatsapp,
+                              });
+                            } catch (e) {
+                              console.error(e);
+                              notify('Dispatch Failed', 'Could not open WhatsApp with files.', 'error');
+                            }
+                          }}
                           aria-label={`WhatsApp ${shop.name}`}
-                          title="Send on WhatsApp"
+                          title="Send Files on WhatsApp"
                           className="p-2 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-lg transition-colors"
                         >
                           <MessageCircle className="w-4 h-4" />
-                        </a>
+                        </button>
                       )}
                       {shop.email && (
-                        <a
-                          href={buildMailtoUrl(shop.email, 'Print Request via PrintReady', `Hello ${shop.name},\n\nI have documents to print.`)}
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (basket.length === 0) {
+                              notify('No Files in Queue', 'Upload files in Print Queue first to send them to this shop.', 'info');
+                              setActiveTab('queue');
+                              return;
+                            }
+                            notify('Dispatching Files...', `Redirecting ${basket.length} file(s) to ${shop.name} via Email...`, 'info');
+                            try {
+                              await dispatchPrintJob({
+                                documentIds: basket.map((b) => b.documentId),
+                                documentNames: basket.map((b) => b.documentName),
+                                target: 'email',
+                                email: shop.email,
+                                subject: `Print Request (${basket.length} files) for ${shop.name}`,
+                              });
+                            } catch (e) {
+                              console.error(e);
+                              notify('Dispatch Failed', 'Could not open Email with files.', 'error');
+                            }
+                          }}
                           aria-label={`Email ${shop.name}`}
-                          title="Send via Email"
+                          title="Send Files via Email"
                           className="p-2 text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 rounded-lg transition-colors"
                         >
                           <Mail className="w-4 h-4" />
-                        </a>
+                        </button>
                       )}
                       <button
                         type="button"
@@ -544,24 +582,61 @@ export function ShopDiscoveryView() {
 
                 <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
                   {shop.whatsapp && (
-                    <a
-                      href={buildWhatsAppUrl(shop.whatsapp, `Hello ${shop.shopName}, I have documents to print via PrintReady.`)}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (basket.length === 0) {
+                          notify('No Files in Queue', 'Upload files in Print Queue first to send them to this shop.', 'info');
+                          setActiveTab('queue');
+                          return;
+                        }
+                        notify('Dispatching Files...', `Redirecting ${basket.length} file(s) to ${shop.shopName} on WhatsApp...`, 'info');
+                        try {
+                          await dispatchPrintJob({
+                            documentIds: basket.map((b) => b.documentId),
+                            documentNames: basket.map((b) => b.documentName),
+                            target: 'whatsapp',
+                            phone: shop.whatsapp,
+                          });
+                        } catch (e) {
+                          console.error(e);
+                          notify('Dispatch Failed', 'Could not open WhatsApp with files.', 'error');
+                        }
+                      }}
                       className="inline-flex items-center gap-1 px-2.5 py-1.5 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 rounded-md font-medium"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
-                      WhatsApp
-                    </a>
+                      Send Files
+                    </button>
                   )}
                   {shop.email && (
-                    <a
-                      href={buildMailtoUrl(shop.email, 'Print Request via PrintReady', `Hello ${shop.shopName},`)}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (basket.length === 0) {
+                          notify('No Files in Queue', 'Upload files in Print Queue first to send them to this shop.', 'info');
+                          setActiveTab('queue');
+                          return;
+                        }
+                        notify('Dispatching Files...', `Redirecting ${basket.length} file(s) to ${shop.shopName} via Email...`, 'info');
+                        try {
+                          await dispatchPrintJob({
+                            documentIds: basket.map((b) => b.documentId),
+                            documentNames: basket.map((b) => b.documentName),
+                            target: 'email',
+                            email: shop.email,
+                            subject: `Print Request (${basket.length} files) for ${shop.shopName}`,
+                          });
+                        } catch (e) {
+                          console.error(e);
+                          notify('Dispatch Failed', 'Could not open Email with files.', 'error');
+                        }
+                      }}
                       className="inline-flex items-center gap-1 px-2.5 py-1.5 text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 rounded-md font-medium"
                     >
                       <Mail className="w-3.5 h-3.5" />
-                      Email
-                    </a>
+                      Send Files
+                    </button>
                   )}
                   {!shop.isDefault && (
                     <button
@@ -661,22 +736,59 @@ export function ShopDiscoveryView() {
             </div>
 
             <div className="flex flex-wrap gap-2 pt-2">
-              <a
-                href={buildWhatsAppUrl(selectedShop.whatsapp, `Hello ${selectedShop.name}, I have documents to print via PrintReady.`)}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={async () => {
+                  if (basket.length === 0) {
+                    notify('No Files in Queue', 'Upload files in Print Queue first to send them to this shop.', 'info');
+                    setActiveTab('queue');
+                    return;
+                  }
+                  notify('Dispatching Files...', `Redirecting ${basket.length} file(s) to ${selectedShop.name} on WhatsApp...`, 'info');
+                  try {
+                    await dispatchPrintJob({
+                      documentIds: basket.map((b) => b.documentId),
+                      documentNames: basket.map((b) => b.documentName),
+                      target: 'whatsapp',
+                      phone: selectedShop.whatsapp,
+                    });
+                  } catch (e) {
+                    console.error(e);
+                    notify('Dispatch Failed', 'Could not open WhatsApp with files.', 'error');
+                  }
+                }}
                 className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-medium text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg"
               >
                 <MessageCircle className="w-3.5 h-3.5" />
-                WhatsApp Shop
-              </a>
-              <a
-                href={buildMailtoUrl(selectedShop.email, 'Print Request via PrintReady', `Hello ${selectedShop.name},\n\nI have documents to print.`)}
+                Send Files on WhatsApp
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (basket.length === 0) {
+                    notify('No Files in Queue', 'Upload files in Print Queue first to send them to this shop.', 'info');
+                    setActiveTab('queue');
+                    return;
+                  }
+                  notify('Dispatching Files...', `Redirecting ${basket.length} file(s) to ${selectedShop.name} via Email...`, 'info');
+                  try {
+                    await dispatchPrintJob({
+                      documentIds: basket.map((b) => b.documentId),
+                      documentNames: basket.map((b) => b.documentName),
+                      target: 'email',
+                      email: selectedShop.email,
+                      subject: `Print Request (${basket.length} files) for ${selectedShop.name}`,
+                    });
+                  } catch (e) {
+                    console.error(e);
+                    notify('Dispatch Failed', 'Could not open Email with files.', 'error');
+                  }
+                }}
                 className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-medium text-white bg-indigo-700 hover:bg-indigo-800 rounded-lg"
               >
                 <Mail className="w-3.5 h-3.5" />
-                Email Shop
-              </a>
+                Send Files via Email
+              </button>
               <button
                 type="button"
                 onClick={() => {

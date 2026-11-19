@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { PDFDocument } from 'pdf-lib';
 import { usePrintReady } from '../../context/PrintReadyContext';
-import { buildMailtoUrl, buildWhatsAppUrl, formatFileSize } from '../../domain/fileValidation';
+import { formatFileSize } from '../../domain/fileValidation';
 import { dispatchPrintJob } from '../../services/fileSharingService';
 import {
   ColorMode,

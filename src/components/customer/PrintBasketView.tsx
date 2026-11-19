@@ -16,8 +16,6 @@ import {
 } from 'lucide-react';
 import { usePrintReady } from '../../context/PrintReadyContext';
 import {
-  buildMailtoUrl,
-  buildWhatsAppUrl,
   formatFileSize,
   renderShareTemplate,
 } from '../../domain/fileValidation';
