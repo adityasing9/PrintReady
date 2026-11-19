@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   Bell,
+  Clock,
   FileText,
   Home,
   LogIn,
@@ -41,6 +42,8 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
     signInWithGoogle,
     signOutUser,
     basket,
+    savedShops,
+    sentHistory,
     orders,
     notifications,
     markAllNotificationsRead,
@@ -51,28 +54,23 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
 
-  const activeRequestCount = orders.filter(
-    (o) => !['completed', 'cancelled', 'rejected', 'refunded'].includes(o.status)
-  ).length;
   const customerNotifs = notifications.filter((n) => n.portal === 'customer');
   const unreadCount = customerNotifs.filter((n) => !n.read).length;
 
   const navItems: NavItem[] = [
-    { id: 'home', label: 'Home', shortLabel: 'Home', icon: Home },
-    { id: 'vault', label: 'Document Vault', shortLabel: 'Vault', icon: FileText },
-    { id: 'scanner', label: 'Scanner & PDF Tools', shortLabel: 'Scan', icon: ScanLine },
-    { id: 'basket', label: 'Print Basket', shortLabel: 'Basket', icon: ShoppingBag, badge: basket.length },
-    { id: 'shops', label: 'Print Shops', shortLabel: 'Shops', icon: Store },
-    { id: 'orders', label: 'Print Requests', shortLabel: 'Requests', icon: Package, badge: activeRequestCount },
-    { id: 'account', label: 'Account & Security', shortLabel: 'Account', icon: Settings },
+    { id: 'queue', label: 'Print Queue', shortLabel: 'Queue', icon: Printer, badge: basket.length },
+    { id: 'shops', label: 'Saved Shops', shortLabel: 'Shops', icon: Store, badge: savedShops.length },
+    { id: 'scanner', label: 'Camera Scanner', shortLabel: 'Scan', icon: ScanLine },
+    { id: 'history', label: 'Sent History', shortLabel: 'History', icon: Clock, badge: sentHistory.length },
+    { id: 'account', label: 'Settings', shortLabel: 'Settings', icon: Settings },
   ];
 
   const mobileBottomTabs: NavItem[] = [
-    navItems[0], // Home
-    navItems[1], // Vault
-    navItems[2], // Scan
-    navItems[3], // Basket
-    navItems[5], // Requests
+    navItems[0], // Queue
+    navItems[1], // Shops
+    navItems[2], // Scanner
+    navItems[3], // History
+    navItems[4], // Settings
   ];
 
   const currentItem = navItems.find((n) => n.id === activeTab) || navItems[0];
@@ -88,7 +86,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
       <div className="px-5 h-16 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 shrink-0">
         <button
           type="button"
-          onClick={() => handleNavClick('home')}
+          onClick={() => handleNavClick('queue')}
           className="text-lg font-bold tracking-tight text-slate-900 dark:text-white font-display whitespace-nowrap shrink-0 flex items-center gap-2.5"
         >
           <span className="w-7 h-7 rounded-lg bg-indigo-700 text-white flex items-center justify-center">

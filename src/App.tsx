@@ -1,33 +1,31 @@
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LayoutShell } from './components/LayoutShell';
 import { AccountSettingsView } from './components/customer/AccountSettingsView';
-import { CustomerHomeView } from './components/customer/CustomerHomeView';
-import { CustomerOrdersView } from './components/customer/CustomerOrdersView';
-import { DocumentVaultView } from './components/customer/DocumentVaultView';
-import { PrintBasketView } from './components/customer/PrintBasketView';
+import { PrintQueueView } from './components/customer/PrintQueueView';
+import { SavedShopsView } from './components/customer/SavedShopsView';
 import { ScannerPdfToolsView } from './components/customer/ScannerPdfToolsView';
-import { ShopDiscoveryView } from './components/customer/ShopDiscoveryView';
+import { SentHistoryView } from './components/customer/SentHistoryView';
 import { PrintReadyProvider, usePrintReady } from './context/PrintReadyContext';
 
 function CustomerAppRouter() {
   const { activeTab } = usePrintReady();
 
   switch (activeTab) {
-    case 'vault':
-      return <DocumentVaultView />;
+    case 'shops':
+      return <SavedShopsView />;
     case 'scanner':
       return <ScannerPdfToolsView />;
-    case 'basket':
-      return <PrintBasketView />;
-    case 'shops':
-      return <ShopDiscoveryView />;
-    case 'orders':
-      return <CustomerOrdersView />;
+    case 'history':
+      return <SentHistoryView />;
     case 'account':
+    case 'settings':
       return <AccountSettingsView />;
+    case 'queue':
     case 'home':
+    case 'basket':
+    case 'vault':
     default:
-      return <CustomerHomeView />;
+      return <PrintQueueView />;
   }
 }
 

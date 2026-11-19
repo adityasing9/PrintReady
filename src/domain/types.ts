@@ -161,6 +161,18 @@ export interface SavedPrintBasket {
   createdAt: string;
 }
 
+export interface SentPrintJob {
+  id: string;
+  shopName: string;
+  shopContact: string;
+  method: 'whatsapp' | 'email' | 'share';
+  fileNames: string[];
+  totalFiles: number;
+  totalCopies: number;
+  message: string;
+  sentAt: string;
+}
+
 export interface ShopPricingTable {
   currency: string;
   bwPerPageA4: number;

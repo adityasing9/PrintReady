@@ -44,6 +44,7 @@ import {
   RegisteredShop,
   SavedPrintBasket,
   SavedShop,
+  SentPrintJob,
   ShareTemplate,
   ShopInventoryItem,
   ShopPricingTable,
@@ -124,9 +125,13 @@ interface PrintReadyContextValue {
   savedShops: SavedShop[];
   shareTemplates: ShareTemplate[];
   addSavedShop: (shop: Omit<SavedShop, 'id' | 'createdAt'>) => void;
+  updateSavedShop: (id: string, patch: Partial<SavedShop>) => void;
   toggleSavedShopFavourite: (id: string) => void;
   setDefaultSavedShop: (id: string) => void;
   deleteSavedShop: (id: string) => void;
+  sentHistory: SentPrintJob[];
+  addSentJob: (job: Omit<SentPrintJob, 'id' | 'sentAt'>) => void;
+  clearSentHistory: () => void;
   registerNewShop: (input: {
     name: string;
     ownerName: string;
@@ -207,7 +212,7 @@ interface PrintReadyContextValue {
   dismissToast: (id: string) => void;
 }
 
-const STORAGE_KEY = 'printready_workspace_v1';
+const STORAGE_KEY = 'printready_clean_v2';
 
 const PrintReadyContext = createContext<PrintReadyContextValue | null>(null);
 
@@ -230,7 +235,7 @@ function saveLocal<T>(key: string, value: T): void {
 
 export function PrintReadyProvider({ children }: { children: React.ReactNode }) {
   const [portal] = useState<AppPortal>('customer');
-  const [activeTab, setActiveTab] = useState<string>('home');
+  const [activeTab, setActiveTab] = useState<string>('queue');
   const [theme, setTheme] = useState<'light' | 'dark'>(() => loadLocal<'light' | 'dark'>('theme', 'light'));
 
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
@@ -243,29 +248,12 @@ export function PrintReadyProvider({ children }: { children: React.ReactNode }) 
   const [documents, setDocuments] = useState<VaultDocument[]>(() => loadLocal('documents', INITIAL_DOCUMENTS));
   const [customCategories, setCustomCategories] = useState<string[]>(() => loadLocal('customCategories', []));
   const [presets, setPresets] = useState<PrintPreset[]>(() => loadLocal('presets', INITIAL_PRESETS));
-  const [basket, setBasket] = useState<PrintBasketItem[]>(() =>
-    loadLocal('basket', [
-      {
-        id: 'bi-seed-1',
-        documentId: 'doc-resume-2026',
-        documentName: 'Aarav_Mehta_Product_Engineer_Resume_2026.pdf',
-        extension: 'pdf',
-        pageCount: 2,
-        sizeBytes: 384_200,
-        settings: {
-          ...DEFAULT_PRINT_SETTINGS,
-          copies: 3,
-          colorMode: 'color',
-          sides: 'single',
-          paperType: 'bond_executive',
-        },
-      },
-    ])
-  );
+  const [basket, setBasket] = useState<PrintBasketItem[]>(() => loadLocal('basket', []));
   const [savedBaskets, setSavedBaskets] = useState<SavedPrintBasket[]>(() => loadLocal('savedBaskets', []));
   const [shops, setShops] = useState<RegisteredShop[]>(() => loadLocal('shops', INITIAL_REGISTERED_SHOPS));
-  const [activeShopId, setActiveShopId] = useState<string>('shop-campus-press');
+  const [activeShopId, setActiveShopId] = useState<string>(() => loadLocal('activeShopId', ''));
   const [savedShops, setSavedShops] = useState<SavedShop[]>(() => loadLocal('savedShops', INITIAL_SAVED_SHOPS));
+  const [sentHistory, setSentHistory] = useState<SentPrintJob[]>(() => loadLocal('sentHistory', []));
   const [shareTemplates, setShareTemplates] = useState<ShareTemplate[]>(() =>
     loadLocal('shareTemplates', INITIAL_SHARE_TEMPLATES)
   );
@@ -387,6 +375,7 @@ export function PrintReadyProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => saveLocal('savedBaskets', savedBaskets), [savedBaskets]);
   useEffect(() => saveLocal('shops', shops), [shops]);
   useEffect(() => saveLocal('savedShops', savedShops), [savedShops]);
+  useEffect(() => saveLocal('sentHistory', sentHistory), [sentHistory]);
   useEffect(() => saveLocal('shareTemplates', shareTemplates), [shareTemplates]);
   useEffect(() => saveLocal('orders', orders), [orders]);
   useEffect(() => saveLocal('inventory', inventory), [inventory]);
@@ -676,8 +665,29 @@ export function PrintReadyProvider({ children }: { children: React.ReactNode }) 
     [notify]
   );
 
+  const updateSavedShop = useCallback(
+    (id: string, patch: Partial<SavedShop>) => {
+      setSavedShops((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+      notify('Shop updated', 'Saved shop details updated successfully.', 'success');
+    },
+    [notify]
+  );
+
   const deleteSavedShop = useCallback((id: string) => {
     setSavedShops((prev) => prev.filter((s) => s.id !== id));
+  }, []);
+
+  const addSentJob = useCallback((job: Omit<SentPrintJob, 'id' | 'sentAt'>) => {
+    const entry: SentPrintJob = {
+      ...job,
+      id: `sent-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`,
+      sentAt: new Date().toISOString(),
+    };
+    setSentHistory((prev) => [entry, ...prev]);
+  }, []);
+
+  const clearSentHistory = useCallback(() => {
+    setSentHistory([]);
   }, []);
 
   const registerNewShop = useCallback(
@@ -1272,9 +1282,13 @@ export function PrintReadyProvider({ children }: { children: React.ReactNode }) 
       savedShops,
       shareTemplates,
       addSavedShop,
+      updateSavedShop,
       toggleSavedShopFavourite,
       setDefaultSavedShop,
       deleteSavedShop,
+      sentHistory,
+      addSentJob,
+      clearSentHistory,
       registerNewShop,
       updateShopPricing,
       updateShopProfile,
@@ -1319,6 +1333,10 @@ export function PrintReadyProvider({ children }: { children: React.ReactNode }) 
       addDocument,
       addInventoryItem,
       addSavedShop,
+      updateSavedShop,
+      addSentJob,
+      clearSentHistory,
+      sentHistory,
       addShareTemplate,
       addShopPrinter,
       addToBasket,

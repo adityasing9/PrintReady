@@ -16,6 +16,7 @@ import {
 import { usePrintReady } from '../../context/PrintReadyContext';
 import { DEFAULT_CATEGORIES } from '../../domain/types';
 import { parsePageRange } from '../../domain/printCalculator';
+import { saveFileBlob } from '../../utils/fileStorage';
 import {
   exportScansToPdf,
   mergePdfBuffers,
@@ -66,7 +67,7 @@ function createSampleScanCanvasDataUrl(pageNum: number): string {
 }
 
 export function ScannerPdfToolsView() {
-  const { folders, addDocument, notify, userProfile } = usePrintReady();
+  const { folders, addDocument, addToBasket, setActiveTab, notify, userProfile } = usePrintReady();
 
   const [mode, setMode] = useState<'scanner' | 'pdf-tools'>('scanner');
 
@@ -228,7 +229,7 @@ export function ScannerPdfToolsView() {
       if (saveToVault) {
         const blob = new Blob([pdfBytes.slice().buffer], { type: 'application/pdf' });
         const previewDataUrl = URL.createObjectURL(blob);
-        addDocument({
+        const newDoc = addDocument({
           name: safeName,
           mimeType: 'application/pdf',
           extension: 'pdf',
@@ -246,7 +247,10 @@ export function ScannerPdfToolsView() {
           syncStatus: userProfile.cloudBackupEnabled ? 'synced' : 'local',
           previewDataUrl,
         });
-        notify('Saved to Document Vault', `${safeName} (${pages.length} pages) indexed and ready to print.`, 'success');
+        await saveFileBlob(newDoc.id, blob);
+        addToBasket(newDoc);
+        notify('Added to Print Queue', `${safeName} (${pages.length} pages) added to Print Queue!`, 'success');
+        setActiveTab('queue');
       } else {
         triggerBlobDownload(pdfBytes, safeName);
         notify('PDF Downloaded', `${safeName} exported successfully.`, 'success');
