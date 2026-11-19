@@ -1,0 +1,2721 @@
+# MASTER PROJECT PROMPT — PRINTREADY
+## Complete Document Wallet, Smart Printing, Print Shop Marketplace & Business Ecosystem
+
+You are an elite product development team consisting of a senior software architect, Flutter developer, frontend engineer, backend engineer, UI/UX designer, AI engineer, cybersecurity specialist, QA engineer, DevOps engineer, and product manager.
+
+Your task is to design, develop, test, and deliver a complete, production-oriented application ecosystem called **PrintReady**.
+
+Do not build a simple prototype, static mockup, landing page, or UI-only demonstration.
+
+Build a real, functional, full-stack product with connected frontend, backend, database, authentication, secure file storage, APIs, integrations, error handling, and deployment infrastructure.
+
+---
+
+# 1. PRODUCT VISION
+
+PrintReady is an all-in-one document wallet and digital printing ecosystem.
+
+Users should be able to upload documents in advance, securely store them, organize them, scan new documents, search them, edit supported document formats, configure printing preferences, save printing shops, and send files instantly through WhatsApp, email, or the integrated PrintReady printing marketplace.
+
+Customers should be able to discover nearby printing shops, place orders, receive pricing, pay digitally, track printing progress, chat with shops, and collect or receive printed documents.
+
+Printing businesses should have their own business management platform for receiving orders, managing customers, pricing, printing queues, staff, payments, inventory, delivery, promotions, reviews, and analytics.
+
+Administrators should have a complete platform management dashboard.
+
+The product should eventually support Android, iOS, web, and desktop-compatible architecture where practical.
+
+## Core slogan
+
+**Upload once. Print anywhere.**
+
+## Core user problem
+
+Users often need to print documents urgently but must find the files on their phone, download them, send them to a shop, explain print settings, and repeat this process every time.
+
+PrintReady eliminates unnecessary steps by keeping documents ready and allowing users to send them to a print shop in seconds.
+
+---
+
+# 2. DEVELOPMENT RULES
+
+Follow these rules throughout development.
+
+1. Build a real working application.
+2. Do not create fake buttons or nonfunctional screens.
+3. Do not simulate successful uploads, payments, orders, authentication, or integrations.
+4. Do not use hardcoded fake data in production functionality.
+5. Use realistic mock data only in clearly labeled development/demo mode.
+6. Every interactive element must have a working action.
+7. Every feature must have its own functional implementation or a clearly documented integration requirement.
+8. Maintain a feature checklist.
+9. Do not silently omit features.
+10. Do not replace requested features with simplified alternatives without documenting the limitation.
+11. Build in development milestones, but maintain the complete product scope from the beginning.
+12. Maintain architectural consistency across customer app, shop app, web portal, and admin dashboard.
+13. Prioritize Android as the primary mobile platform initially.
+14. Design the architecture to support future iOS and web deployment.
+15. Follow secure development practices.
+16. Never expose API secrets, private keys, payment credentials, or server secrets in frontend code.
+17. Never claim an integration is functional if credentials or approvals are missing.
+18. If an external integration requires credentials, create its integration layer, configuration, setup documentation, and testing framework.
+19. Handle errors gracefully.
+20. Preserve existing working features when adding new functionality.
+21. Do not rewrite stable components unnecessarily.
+22. Use modular, maintainable, reusable code.
+23. Write documentation alongside development.
+24. Use automated testing wherever possible.
+25. Before marking a feature complete, test its complete workflow.
+
+---
+
+# 3. PRODUCT ECOSYSTEM
+
+Build four connected products.
+
+## Product A: Customer Mobile App
+
+Primary users:
+
+- Students
+- College students
+- Office workers
+- Job seekers
+- Business owners
+- Individuals
+- Anyone needing document printing
+
+The customer app must contain:
+
+- Account and profile management
+- Secure document vault
+- Document uploads
+- Folders
+- File search
+- AI document organization
+- Document scanner
+- OCR
+- PDF tools
+- Print basket
+- Printing presets
+- Print preview
+- Printing shop discovery
+- Shop profiles
+- Saved shops
+- Instant WhatsApp sharing
+- Email sharing
+- Native file sharing
+- Marketplace orders
+- Payments
+- Order tracking
+- Chat
+- Pickup and delivery
+- Reviews
+- Coupons
+- Loyalty rewards
+- Notifications
+- Cloud backup
+- Multi-device sync
+- Security settings
+- Subscription management
+- Help and support
+
+## Product B: Printing Shop App
+
+Printing businesses need:
+
+- Shop registration
+- Business verification
+- Shop profile
+- Services
+- Pricing
+- Incoming orders
+- File downloads
+- Print queue
+- Order management
+- Customer communication
+- Price confirmation
+- Payments
+- Receipts
+- Pickup
+- Delivery
+- Staff management
+- Printer management
+- Inventory
+- Promotions
+- Coupons
+- Analytics
+- Reports
+- Reviews
+- Notifications
+- Business settings
+
+## Product C: Web Platform
+
+Build a responsive web platform supporting:
+
+- Customer web access
+- Document uploads
+- Document management
+- Online printing orders
+- Shop discovery
+- Shop owner dashboard
+- Order management
+- Chat
+- Pricing
+- Analytics
+- Account management
+
+## Product D: Admin Dashboard
+
+Build a secured administrative web dashboard for:
+
+- Users
+- Shops
+- Verification
+- Orders
+- Payments
+- Refunds
+- Complaints
+- Reviews
+- Support
+- Subscriptions
+- Promotions
+- Platform settings
+- Analytics
+- Security
+- Audit logs
+
+---
+
+# 4. TECHNOLOGY STACK
+
+Use the following recommended architecture unless a strong technical reason requires a change.
+
+## Mobile
+
+- Flutter
+- Dart
+- Material 3 design system
+- Riverpod or another scalable state-management solution
+- GoRouter for navigation
+- Modular feature architecture
+- Local persistent database
+- Secure storage
+- Native Android integrations
+
+## Backend
+
+- Firebase Authentication
+- Cloud Firestore
+- Firebase Storage or secure compatible object storage
+- Cloud Functions
+- Firebase Cloud Messaging
+- Firebase App Check
+- Firebase Crashlytics
+- Firebase Analytics
+- Firebase Remote Config
+
+## Web
+
+- Next.js
+- TypeScript
+- Responsive design
+- Reusable components
+- Secure authentication
+- API-driven architecture
+
+## AI
+
+- Gemini API through secure backend
+- Google ML Kit for on-device OCR where appropriate
+- AI document classification
+- AI search
+- AI-assisted print configuration
+- AI assistant
+
+## Maps
+
+- Google Maps integration
+- Places search if properly configured
+- Geolocation permission handling
+- Map and list views
+
+## Payments
+
+Design a payment-provider abstraction.
+
+For India, support integration with an appropriate provider such as Razorpay, subject to merchant onboarding, credentials, and applicable requirements.
+
+Support:
+
+- UPI
+- QR
+- Cards where supported
+- Payment status verification
+- Refunds
+- Webhooks
+- Transaction reconciliation
+
+Never treat a client-side payment success screen as proof of payment.
+
+## Email
+
+Use a secure backend email service.
+
+Support:
+
+- Email verification
+- Transactional email
+- Order receipts
+- Order notifications
+- Password/account recovery
+- Support communication
+
+## WhatsApp
+
+Implement supported WhatsApp sharing functionality.
+
+Support:
+
+- WhatsApp
+- WhatsApp Business where installed
+- Prepared text messages
+- File attachments through native sharing
+- Saved shop contact details
+- Direct contact initiation
+
+Where official WhatsApp Business APIs are appropriate, create a separate integration layer.
+
+Do not assume that ordinary WhatsApp allows automatically sending arbitrary files to a chosen recipient without the user confirming the send.
+
+## Architecture
+
+Use a modular architecture.
+
+Organize code into:
+
+- Presentation layer
+- Application/state layer
+- Domain layer
+- Data layer
+- Backend/API layer
+- Integration layer
+- Security layer
+
+Separate customer, shop, and admin permissions.
+
+Use reusable components and shared business logic wherever appropriate.
+
+---
+
+# 5. BRANDING AND DESIGN SYSTEM
+
+Create a polished, premium, modern application.
+
+The design should feel:
+
+- Professional
+- Simple
+- Fast
+- Trustworthy
+- Modern
+- Organized
+- Accessible
+- Premium
+- Friendly without being childish
+
+## Visual direction
+
+Use a clean productivity-app design.
+
+Recommended visual palette:
+
+- Primary: Deep indigo or dark blue
+- Secondary: Vibrant violet or blue
+- Accent: Teal or green for successful actions
+- Background: Neutral light grey/white
+- Dark mode: Deep charcoal backgrounds
+- Cards: Rounded corners, subtle borders
+- Typography: Modern readable sans-serif
+
+Use consistent:
+
+- Spacing
+- Typography
+- Buttons
+- Icons
+- Cards
+- Inputs
+- Dialogs
+- Bottom sheets
+- Navigation
+- Loading indicators
+- Error states
+- Empty states
+- Confirmation states
+
+Avoid:
+
+- Excessive gradients
+- Excessive animations
+- Clutter
+- Tiny text
+- Unnecessary decorations
+- Fake dashboard statistics
+- Unnecessary onboarding screens
+- Buttons without functionality
+
+## Accessibility
+
+Support:
+
+- Readable text
+- Large text
+- Screen reader labels
+- Keyboard navigation on web
+- High contrast
+- Accessible touch targets
+- Meaningful error messages
+
+---
+
+# 6. AUTHENTICATION AND ACCOUNT MANAGEMENT
+
+Implement:
+
+- Email signup
+- Email login
+- Phone signup
+- Phone OTP verification
+- Google authentication
+- Password recovery
+- Email verification
+- Phone verification
+- Profile management
+- Profile picture
+- Name
+- Phone
+- Email
+- Addresses
+- Preferred language
+- Theme
+- Notification settings
+- Security settings
+
+Support account roles:
+
+- Customer
+- Shop owner
+- Shop employee
+- Admin
+- Support agent
+
+Implement secure role-based access control.
+
+Users must not be able to grant themselves admin or shop-owner privileges by modifying client-side data.
+
+Implement:
+
+- Session management
+- Logout
+- Logout from all devices
+- Device list
+- Account deletion
+- Account data export
+- Authentication rate limits
+- Abuse prevention
+- Secure recovery workflows
+
+---
+
+# 7. DOCUMENT VAULT
+
+Create a full document management system.
+
+## File types
+
+Support storage and appropriate preview for:
+
+- PDF
+- JPG
+- JPEG
+- PNG
+- WebP
+- HEIC where supported
+- DOC
+- DOCX
+- XLS
+- XLSX
+- PPT
+- PPTX
+- TXT
+
+Other file types may be stored with limited preview support where appropriate.
+
+## Upload
+
+Support:
+
+- Single upload
+- Multiple uploads
+- Drag and drop on web
+- File picker
+- Camera import
+- Gallery import
+- Device storage
+- Cloud import when integrated
+- Upload progress
+- Retry
+- Cancellation
+- Resume where technically supported
+- Upload queue
+
+## File management
+
+Implement:
+
+- Rename
+- Move
+- Copy
+- Delete
+- Restore
+- Permanently delete
+- Favourite
+- Share
+- Download
+- Preview
+- Duplicate detection
+- Tags
+- Version history
+- Metadata
+- File size
+- Creation date
+- Last modified date
+
+## Folders
+
+Support:
+
+- Custom folders
+- Nested folders
+- Categories
+- Folder colours/icons
+- Folder search
+- Folder sorting
+- Batch actions
+
+Suggested categories:
+
+- Identity
+- Education
+- College
+- Job
+- Resume
+- Certificates
+- Banking
+- Government
+- Travel
+- Medical
+- Personal
+- Photos
+- Business
+- Other
+
+Users must be able to create their own categories.
+
+## Search
+
+Search by:
+
+- Filename
+- Folder
+- Category
+- Tags
+- File type
+- Date
+- OCR content
+- Document metadata
+
+Implement filters.
+
+## Recent files
+
+Display:
+
+- Recently uploaded
+- Recently opened
+- Recently printed
+- Recently shared
+
+## Favourites
+
+Users can favourite:
+
+- Documents
+- Folders
+- Shops
+- Print presets
+
+## Trash
+
+Implement:
+
+- Recover deleted documents
+- Permanent deletion
+- Automatic trash cleanup based on configurable retention
+- Confirmation before permanent deletion
+
+## Local and cloud storage
+
+Support:
+
+- Local storage
+- Optional cloud backup
+- Cloud sync
+- Multi-device sync
+- Offline access
+- Storage usage display
+- Backup status
+- Sync status
+- Conflict handling
+
+Never expose cloud files publicly.
+
+---
+
+# 8. AI DOCUMENT INTELLIGENCE
+
+Create a secure AI-powered document system.
+
+## AI classification
+
+Automatically detect document types:
+
+- Resume
+- ID card
+- Certificate
+- Application
+- Invoice
+- Receipt
+- Ticket
+- Photo
+- Notes
+- Letter
+- Contract
+- Other
+
+AI should suggest:
+
+- Document title
+- Category
+- Folder
+- Tags
+- Relevant date
+- Expiration date where applicable
+
+The user must be able to approve, edit, or reject suggestions.
+
+## OCR
+
+Implement OCR for:
+
+- Scanned PDFs
+- Images
+- Camera scans
+
+Extract text for searchable indexing.
+
+## AI search
+
+Allow natural-language queries such as:
+
+- Find my college ID.
+- Show my resume.
+- Find my bank document.
+- Find the certificate containing my name.
+- Show files uploaded last week.
+- Find my latest resume.
+
+## Document summarization
+
+Allow users to summarize documents.
+
+## Duplicate detection
+
+Detect:
+
+- Exact duplicates
+- Similar documents
+- Different versions of the same document
+
+Provide a review interface.
+
+## Expiry reminders
+
+Allow reminders for documents such as:
+
+- Passport
+- Certificates
+- ID cards
+- Licenses
+- Other user-selected documents
+
+Users must control reminder dates and notifications.
+
+## Privacy
+
+AI processing must:
+
+- Use a secure backend
+- Avoid exposing API keys
+- Respect user consent
+- Avoid unnecessary retention
+- Explain processing where sensitive files are involved
+- Allow disabling AI features
+
+---
+
+# 9. DOCUMENT SCANNER
+
+Build a full scanning experience.
+
+## Camera scanner
+
+Implement:
+
+- Camera capture
+- Document edge detection
+- Auto capture where supported
+- Manual capture
+- Crop
+- Perspective correction
+- Rotate
+- Brightness
+- Contrast
+- Filters
+- Grayscale
+- Black and white
+- Colour
+- Shadow removal where supported
+
+## Multi-page scanning
+
+Support:
+
+- Multiple pages
+- Page reorder
+- Page deletion
+- Page replacement
+- Page preview
+- Add pages later
+- Combine pages
+
+## Export
+
+Export scanned documents as:
+
+- PDF
+- JPG
+- PNG
+
+Support:
+
+- OCR
+- Searchable PDF where possible
+- Compression
+- Filename
+- Category
+- Folder selection
+
+## Document utilities
+
+Implement:
+
+- PDF merge
+- PDF split
+- PDF compress
+- PDF rotate
+- Page reorder
+- PDF page deletion
+- Image to PDF
+- PDF to image
+- Add watermark
+- PDF password protection
+- PDF page numbering
+- Resize images
+- Image compression
+- Image crop
+- Supported format conversion
+
+Only implement password removal for files the user is authorized to access.
+
+---
+
+# 10. PRINT BASKET
+
+Create a dedicated print basket.
+
+Users can:
+
+- Select multiple documents
+- Add documents to basket
+- Remove documents
+- Change order
+- View selected files
+- Set individual printing options
+- Set shared printing options
+- Save the basket
+- Reuse previous baskets
+- Create print collections
+
+## Per-document settings
+
+Implement:
+
+- Copies
+- Paper size
+- Colour
+- Black & white
+- Single-sided
+- Double-sided
+- Orientation
+- Page range
+- Scaling
+- Fit to page
+- Actual size
+- Custom scaling
+- Paper type
+- Layout
+- Pages per sheet
+- Collation
+- Binding
+- Stapling
+- Special instructions
+
+## Paper sizes
+
+Support:
+
+- A4
+- A3
+- A5
+- Letter
+- Legal
+- Custom
+
+## Page range
+
+Support:
+
+- All pages
+- Specific pages
+- Ranges
+- Multiple ranges
+
+Example:
+
+1-5, 8, 10-12
+
+Validate page ranges.
+
+## Copies
+
+Allow individual copy counts per document.
+
+## Print presets
+
+Users can create, edit, delete, and save unlimited presets.
+
+Examples:
+
+- College
+- Office
+- Resume
+- Certificate
+- Notes
+- ID
+- Photo
+- Legal
+- Custom
+
+A preset can contain:
+
+- Paper size
+- Colour
+- Sides
+- Orientation
+- Copies
+- Layout
+- Scaling
+- Paper type
+- Binding
+
+Allow applying a preset to multiple documents.
+
+---
+
+# 11. PRINT PREVIEW
+
+Before sending a print job:
+
+- Preview PDF
+- Preview images
+- Preview page selection
+- Preview orientation
+- Preview paper size
+- Preview scaling
+- Preview copies
+- Preview colour settings
+- Display page count
+- Display estimated sheets
+- Detect unsupported files
+- Warn about large files
+- Warn about low-resolution images
+- Warn about blank pages where possible
+- Warn about potentially cropped content
+
+Implement print cost estimation.
+
+Do not claim to accurately simulate printer output where the actual printer characteristics are unknown.
+
+---
+
+# 12. PRINT COST CALCULATOR
+
+Support pricing for:
+
+- B&W pages
+- Colour pages
+- A4
+- A3
+- A5
+- Letter
+- Legal
+- Photo prints
+- Premium paper
+- Binding
+- Lamination
+- Scanning
+- Photocopying
+- ID printing
+- Other services
+
+Allow shop-specific pricing.
+
+Calculate:
+
+- Per-document cost
+- Total copies
+- Estimated pages
+- Estimated sheets
+- Subtotal
+- Discounts
+- Service charges
+- Delivery
+- Tax where applicable
+- Total
+
+Display price as an estimate until confirmed by the shop.
+
+---
+
+# 13. SAVED PRINTING SHOPS
+
+Create a dedicated shop directory.
+
+Users should be able to save printing shops even if those shops are not registered on PrintReady.
+
+## Shop information
+
+Store:
+
+- Shop name
+- Owner name if known
+- Phone
+- WhatsApp
+- WhatsApp Business number
+- Email
+- Address
+- Location coordinates
+- Google Maps link
+- Opening hours
+- Notes
+- Services
+- Pricing
+- Preferred contact method
+- Shop photo
+- Website
+- Social links
+
+## Saved shops
+
+Implement:
+
+- Favourite shops
+- Default shop
+- Shop groups
+- Shop notes
+- Shop-specific preferences
+- Contact
+- Call
+- WhatsApp
+- Email
+- Directions
+- Previous orders
+
+## Shop groups
+
+Allow custom groups such as:
+
+- Near home
+- College
+- Office
+- Trusted
+- Cheapest
+- Favourite
+
+## Shop-specific presets
+
+Remember settings per shop.
+
+Example:
+
+Shop A:
+
+- A4
+- B&W
+- Double-sided
+- WhatsApp
+
+Shop B:
+
+- Colour
+- Single-sided
+- Email
+
+Allow users to edit and override preferences.
+
+---
+
+# 14. SHOP DISCOVERY
+
+Implement:
+
+- Nearby shops
+- Search
+- Map
+- List
+- Distance
+- Ratings
+- Reviews
+- Open/closed status
+- Services
+- Pricing
+- Delivery
+- Pickup
+- Online ordering
+- Filters
+- Sort
+
+Filters:
+
+- Distance
+- Rating
+- Price
+- Service
+- Open now
+- Pickup
+- Delivery
+- Verified
+- Online ordering
+
+Location access must be optional.
+
+Users can manually enter a location if they deny GPS access.
+
+---
+
+# 15. SHOP PROFILE
+
+Every registered shop needs:
+
+- Name
+- Logo
+- Photos
+- Owner
+- Address
+- Map location
+- Phone
+- WhatsApp
+- Email
+- Opening hours
+- Holiday hours
+- Services
+- Price list
+- Paper types
+- Printing options
+- Payment methods
+- Pickup
+- Delivery
+- Estimated turnaround time
+- Rating
+- Reviews
+- Verification status
+- Contact buttons
+
+Allow shops to update profiles.
+
+---
+
+# 16. DIRECT SHARING
+
+Implement native sharing for Android and supported platforms.
+
+## WhatsApp
+
+Allow:
+
+- Select files
+- Select shop contact
+- Prepare message
+- Share files
+- Open WhatsApp
+- WhatsApp Business
+- Send instructions
+- Share multiple documents where supported
+
+The user may need to select the destination conversation and confirm sending.
+
+Do not claim that normal WhatsApp supports silent automatic file delivery.
+
+## Email
+
+Prepare:
+
+- Recipient
+- CC where requested
+- Subject
+- Message
+- Selected attachments
+- Print settings
+
+Open a supported email composer.
+
+## Native share sheet
+
+Support:
+
+- Bluetooth
+- Nearby Share
+- WhatsApp
+- Email
+- Other compatible apps
+
+Handle large files and sharing errors.
+
+## Message templates
+
+Allow:
+
+- Default template
+- Shop-specific template
+- Custom template
+- Template variables
+
+Variables:
+
+- Customer name
+- Shop name
+- Document names
+- Copies
+- Settings
+- Pickup time
+- Order number
+
+Example:
+
+"Hello, please print the attached files. Settings: {{settings}}. Copies: {{copies}}. Please let me know the total price and estimated completion time."
+
+---
+
+# 17. PRINTREADY MARKETPLACE ORDERS
+
+Registered shops can receive digital printing orders directly.
+
+## Order creation
+
+Customer selects:
+
+- Shop
+- Documents
+- Print settings
+- Copies
+- Pickup or delivery
+- Preferred time
+- Special instructions
+
+System creates:
+
+- Unique order number
+- Order summary
+- File references
+- Price estimate
+- Order status
+- Customer information
+
+## Shop response
+
+Shop can:
+
+- Accept
+- Reject
+- Request clarification
+- Modify estimated price
+- Confirm availability
+- Confirm turnaround time
+
+Any price change must be shown to the customer for approval.
+
+## Customer approval
+
+Customer can:
+
+- Approve price
+- Reject price
+- Cancel
+- Ask questions
+- Pay
+
+## Order statuses
+
+Implement:
+
+- Draft
+- Submitted
+- Received
+- Awaiting shop response
+- Accepted
+- Rejected
+- Price pending approval
+- Approved
+- Payment pending
+- Paid
+- Printing
+- Quality check
+- Ready for pickup
+- Out for delivery
+- Delivered
+- Completed
+- Cancelled
+- Refund requested
+- Refunded
+
+Implement a status transition system.
+
+Prevent invalid transitions.
+
+Record timestamps and actors.
+
+---
+
+# 18. PRINT SHOP APPLICATION
+
+Create a shop-owner interface.
+
+## Onboarding
+
+- Create account
+- Register shop
+- Verify phone
+- Verify email
+- Business details
+- Shop address
+- GPS location
+- Upload photos
+- Add services
+- Set prices
+- Set operating hours
+- Set pickup/delivery
+- Verification process
+
+## Dashboard
+
+Show actual business statistics:
+
+- New orders
+- Pending orders
+- Printing
+- Ready
+- Completed today
+- Revenue today
+- Revenue this month
+- Outstanding payments
+- Order volume
+
+Only display real data.
+
+## Order management
+
+Implement:
+
+- New orders
+- Accept/reject
+- Customer details
+- Document list
+- Secure file access
+- Print instructions
+- Price
+- Status
+- Priority
+- Due time
+- Staff assignment
+- Download
+- Print queue
+- Completion
+- Pickup
+- Delivery
+
+## Print queue
+
+Shop can:
+
+- Sort by priority
+- Sort by deadline
+- Group jobs
+- Filter
+- View file details
+- Download files
+- View print specifications
+- Track progress
+- Assign staff
+
+## Customer management
+
+Implement:
+
+- Customer profiles
+- Order history
+- Preferences
+- Contact information
+- Notes
+- Loyalty
+- Search
+
+## Pricing
+
+Create editable price lists.
+
+Prices may depend on:
+
+- Paper size
+- Colour
+- Sides
+- Copies
+- Paper quality
+- Service
+- Binding
+- Lamination
+- Special work
+
+## Shop staff
+
+Support:
+
+- Staff invitations
+- Role assignment
+- Permissions
+- Staff accounts
+- Activity records
+
+Roles:
+
+- Owner
+- Manager
+- Printer/operator
+- Cashier
+- Delivery staff
+
+---
+
+# 19. SHOP INVENTORY AND EQUIPMENT
+
+Implement shop inventory management.
+
+Track:
+
+- Paper
+- Ink
+- Toner
+- Photo paper
+- Binding materials
+- Lamination sheets
+- Other supplies
+
+Features:
+
+- Stock levels
+- Low-stock warnings
+- Purchase entries
+- Usage
+- Inventory history
+- Supplier details
+
+Printer management:
+
+- Printer name
+- Printer type
+- Supported sizes
+- Colour support
+- Duplex
+- Status
+- Maintenance records
+- Assigned jobs
+
+Do not attempt direct printer control unless the printer and platform support it.
+
+---
+
+# 20. PAYMENT SYSTEM
+
+Create a secure payment abstraction.
+
+Support provider integration.
+
+## Payment options
+
+- UPI
+- QR
+- Cash
+- Cards
+- Supported online payment methods
+
+## Payment workflow
+
+1. Shop confirms order.
+2. Customer receives final price.
+3. Customer approves.
+4. Customer chooses payment.
+5. Payment gateway processes.
+6. Backend verifies transaction.
+7. Order payment status updates.
+8. Shop receives confirmation.
+
+## Payment functionality
+
+- Payment initiation
+- Payment verification
+- Webhooks
+- Transaction IDs
+- Receipts
+- Refunds
+- Refund status
+- Failed payment handling
+- Reconciliation
+
+## Important
+
+- Never store raw card details.
+- Never trust client payment status.
+- Validate payment on backend.
+- Use idempotency where supported.
+- Verify webhook signatures.
+- Prevent duplicate payment processing.
+- Maintain transaction audit logs.
+
+---
+
+# 21. PICKUP AND DELIVERY
+
+## Pickup
+
+Support:
+
+- Pickup time
+- Pickup instructions
+- Ready notification
+- QR code
+- Order number
+- Collection verification
+
+## Delivery
+
+Support:
+
+- Address book
+- Delivery address
+- Delivery fee
+- Delivery instructions
+- Tracking
+- Delivery status
+- Shop delivery
+- Courier integration where available
+- Delivery confirmation
+
+Delivery options depend on shop capability.
+
+---
+
+# 22. CHAT SYSTEM
+
+Create order-based chat.
+
+Customer and shop can communicate.
+
+Features:
+
+- Text
+- File attachments
+- Images
+- Order reference
+- Quick replies
+- Price clarification
+- Print clarification
+- Pickup instructions
+- Delivery instructions
+- Message timestamps
+- Read status
+- Notifications
+
+Example quick replies for shops:
+
+- Order received
+- Price confirmed
+- Please clarify print settings
+- File is unreadable
+- Printing started
+- Ready for pickup
+- Please collect before closing
+
+Use secure access controls.
+
+---
+
+# 23. NOTIFICATIONS
+
+Implement in-app and push notifications.
+
+Customer:
+
+- Upload success
+- Backup
+- Sync
+- New order
+- Shop accepted
+- Price change
+- Payment
+- Printing
+- Ready
+- Delivery
+- Completion
+- Refund
+- Chat
+- Reminder
+- Expiration
+
+Shop:
+
+- New order
+- Customer approval
+- Payment
+- Cancellation
+- Chat
+- Pickup
+- Delivery
+- Review
+- Low inventory
+
+Admin:
+
+- Reports
+- Fraud alerts
+- Payment issues
+- Shop verification
+- Complaints
+- System health
+
+Allow notification preferences.
+
+---
+
+# 24. REVIEWS AND TRUST
+
+Implement:
+
+- Ratings
+- Written reviews
+- Verified-order badges
+- Shop responses
+- Review moderation
+- Review reporting
+- Shop reporting
+- Customer complaint workflow
+- Verification badges
+
+Allow reviews only after valid orders for verified-purchase status.
+
+---
+
+# 25. LOYALTY AND PROMOTIONS
+
+Implement:
+
+- Loyalty points
+- Rewards
+- Coupons
+- Referral system
+- Shop discounts
+- Platform discounts
+- Promotional campaigns
+- Customer levels
+- Repeat customer rewards
+- Coupon validation
+
+Make all promotional rules configurable.
+
+Prevent abuse.
+
+---
+
+# 26. ADMIN DASHBOARD
+
+Build a full admin web portal.
+
+## Dashboard
+
+Show:
+
+- Total users
+- Active users
+- New users
+- Registered shops
+- Verified shops
+- Total orders
+- Pending orders
+- Completed orders
+- Failed orders
+- Revenue
+- Payment volume
+- Refunds
+- Support tickets
+- Storage usage
+
+## Users
+
+- Search
+- View
+- Suspend
+- Unsuspend
+- Delete according to policy
+- Review account activity
+- Support
+
+## Shops
+
+- Verify
+- Approve
+- Reject
+- Suspend
+- Manage profile
+- Manage services
+- Manage categories
+- Review complaints
+
+## Orders
+
+- Search
+- View
+- Track
+- Investigate
+- Cancel where permitted
+- Manage disputes
+- Refund workflows
+
+## Payments
+
+- Transaction history
+- Payment status
+- Refunds
+- Reconciliation
+- Gateway errors
+
+## Reviews
+
+- Moderate
+- Investigate
+- Remove policy-violating content
+- Respond where authorized
+
+## Platform
+
+- Pricing
+- Fees
+- Subscriptions
+- Promotions
+- Coupons
+- Notifications
+- App settings
+- Feature flags
+- Storage limits
+
+## Support
+
+- Tickets
+- Complaints
+- Refund requests
+- Technical support
+- Customer/shop disputes
+
+## Audit
+
+Record privileged actions.
+
+Admin access must be secured with strong authentication and role-based permissions.
+
+---
+
+# 27. SUBSCRIPTIONS AND MONETIZATION
+
+Design subscription functionality.
+
+## Customer plans
+
+Free plan:
+
+- Local storage
+- Basic document management
+- Direct sharing
+- Saved shops
+- Basic print presets
+
+Premium:
+
+- Cloud storage
+- Sync
+- AI tools
+- Advanced OCR
+- Premium document tools
+- Advanced search
+- Increased storage
+
+## Shop plans
+
+Free:
+
+- Basic listing
+- Shop profile
+- Contact information
+
+Pro:
+
+- Marketplace orders
+- Analytics
+- Customer management
+- Promotions
+- Advanced order tools
+- Staff
+- Business reports
+
+## Monetization
+
+Potential:
+
+- Subscriptions
+- Premium storage
+- Shop subscriptions
+- Order commission
+- Featured listings
+- Promotions
+
+Implement configurable plans.
+
+Do not hardcode subscription pricing.
+
+---
+
+# 28. SECURITY
+
+Security is mandatory.
+
+## Storage
+
+- Private storage buckets
+- Secure access
+- Signed access where appropriate
+- File permissions
+- Encryption
+- Secure deletion
+- Retention policies
+
+## Documents
+
+- Validate uploads
+- Check MIME types
+- Validate file extensions
+- Restrict dangerous file types
+- Malware scanning where available
+- Size limits
+- Secure previews
+- Avoid public URLs
+
+## Authentication
+
+- Secure sessions
+- Role-based access
+- Rate limiting
+- Abuse prevention
+- OTP protections
+
+## Database
+
+- Firestore security rules
+- Ownership validation
+- Shop access validation
+- Order access validation
+- Admin restrictions
+
+## Backend
+
+- Secret management
+- Input validation
+- API rate limiting
+- Secure error handling
+- Audit logs
+- Idempotency
+- Webhook validation
+
+## Privacy
+
+Implement:
+
+- Privacy settings
+- Consent
+- Data export
+- Data deletion
+- Backup deletion
+- Retention settings
+- Cloud storage controls
+- AI processing controls
+
+## Order file retention
+
+Printing order files should not remain accessible indefinitely.
+
+Implement configurable policies:
+
+- Files accessible during active order
+- Temporary shop access
+- Order completion retention period
+- Automatic deletion
+- Customer deletion
+- Audit of file access
+
+Allow customers to manage their own permanent document vault separately from order copies.
+
+---
+
+# 29. DATA MODEL
+
+Create a structured database schema.
+
+Include collections/entities for:
+
+- users
+- profiles
+- devices
+- sessions
+- documents
+- documentVersions
+- folders
+- tags
+- printPresets
+- printBaskets
+- basketItems
+- shops
+- shopOwners
+- shopStaff
+- shopServices
+- shopPricing
+- shopHours
+- shopVerification
+- savedShops
+- shopGroups
+- orders
+- orderItems
+- orderFiles
+- orderEvents
+- payments
+- refunds
+- conversations
+- messages
+- notifications
+- reviews
+- coupons
+- promotions
+- loyaltyAccounts
+- referrals
+- deliveries
+- supportTickets
+- subscriptions
+- inventory
+- inventoryTransactions
+- printers
+- reports
+- auditLogs
+- appSettings
+
+Define:
+
+- Schema
+- Required fields
+- Optional fields
+- Relationships
+- Validation
+- Permissions
+- Indexes
+- Retention policies
+
+Use unique IDs.
+
+Store timestamps consistently.
+
+Avoid excessive duplication.
+
+---
+
+# 30. BACKEND APIs
+
+Create secure backend endpoints/functions for:
+
+## Authentication
+
+- Profile management
+- Account deletion
+- Session management
+
+## Documents
+
+- Upload authorization
+- Metadata creation
+- Search
+- Rename
+- Delete
+- Restore
+- Backup
+- Sync
+- OCR
+- AI classification
+
+## Shops
+
+- Registration
+- Search
+- Discovery
+- Profile
+- Services
+- Pricing
+- Verification
+
+## Orders
+
+- Create
+- Validate
+- Submit
+- Accept
+- Reject
+- Price update
+- Approval
+- Cancel
+- Status updates
+- Complete
+
+## Payments
+
+- Initiate
+- Verify
+- Webhook
+- Refund
+- Receipt
+
+## Chat
+
+- Send
+- Retrieve
+- Attachments
+- Permissions
+
+## Notifications
+
+- Send
+- Preferences
+- Delivery records
+
+## Admin
+
+- Users
+- Shops
+- Orders
+- Payments
+- Support
+- Analytics
+
+Document APIs.
+
+Use appropriate request validation.
+
+---
+
+# 31. OFFLINE FUNCTIONALITY
+
+The customer app should work offline where practical.
+
+Offline support:
+
+- View downloaded documents
+- Browse folders
+- Search local files
+- Manage local documents
+- Prepare print baskets
+- View cached shop details
+- View order history cached locally
+
+When online:
+
+- Sync
+- Upload
+- Backup
+- Submit orders
+- Send notifications
+- Update statuses
+
+Implement:
+
+- Sync queues
+- Retry
+- Conflict handling
+- Offline indicators
+- Network detection
+
+Do not falsely mark cloud changes as synchronized.
+
+---
+
+# 32. UI SCREENS
+
+## Customer mobile screens
+
+Create:
+
+1. Splash
+2. Onboarding
+3. Signup
+4. Login
+5. OTP
+6. Home
+7. Document vault
+8. Folders
+9. Folder details
+10. Upload
+11. Upload queue
+12. Document preview
+13. Document details
+14. Rename
+15. Tags
+16. Search
+17. AI search
+18. Scanner
+19. Scan editor
+20. Scan pages
+21. PDF tools
+22. Print basket
+23. Print settings
+24. Print preview
+25. Print presets
+26. Create preset
+27. Shop discovery
+28. Map
+29. Shop list
+30. Shop details
+31. Saved shops
+32. Shop groups
+33. Shop comparison
+34. Quick send
+35. Share configuration
+36. WhatsApp sharing
+37. Email sharing
+38. Marketplace order creation
+39. Order summary
+40. Price confirmation
+41. Checkout
+42. Payment
+43. Order tracking
+44. Order history
+45. Order details
+46. Chat
+47. Pickup
+48. Delivery tracking
+49. Reviews
+50. Coupons
+51. Loyalty
+52. Notifications
+53. Profile
+54. Settings
+55. Security
+56. Storage
+57. Backup
+58. Subscription
+59. Help
+60. Support
+61. Privacy
+62. Account deletion
+
+## Shop screens
+
+1. Shop signup
+2. Shop verification
+3. Business profile
+4. Dashboard
+5. Orders
+6. New orders
+7. Order details
+8. File viewer
+9. Print queue
+10. Printing status
+11. Completed orders
+12. Customers
+13. Customer details
+14. Chat
+15. Pricing
+16. Services
+17. Shop hours
+18. Staff
+19. Staff permissions
+20. Inventory
+21. Inventory transactions
+22. Printers
+23. Printer settings
+24. Delivery
+25. Payments
+26. Revenue
+27. Reports
+28. Reviews
+29. Promotions
+30. Coupons
+31. Notifications
+32. Settings
+33. Support
+
+## Admin screens
+
+1. Admin login
+2. Dashboard
+3. Analytics
+4. Users
+5. User details
+6. Shops
+7. Verification queue
+8. Shop details
+9. Orders
+10. Order details
+11. Payments
+12. Refunds
+13. Reviews
+14. Complaints
+15. Support tickets
+16. Subscriptions
+17. Promotions
+18. Coupons
+19. Platform settings
+20. Storage management
+21. Audit logs
+22. Security
+23. Reports
+
+---
+
+# 33. HOME DASHBOARD
+
+Create a premium customer home screen.
+
+Include:
+
+- Greeting
+- Search bar
+- Quick Print button
+- Scan button
+- Upload button
+- Documents
+- Recent files
+- Favourites
+- Saved shops
+- Recent orders
+- Pending orders
+- Quick presets
+- Storage status
+- Smart suggestions
+
+Quick actions:
+
+- Upload document
+- Scan document
+- Print
+- Send
+- Find shop
+- View orders
+
+The dashboard must be personalized using actual user data.
+
+---
+
+# 34. PERFORMANCE
+
+Optimize:
+
+- App launch
+- File loading
+- Search
+- Large PDFs
+- Image previews
+- Uploads
+- Downloads
+- Database queries
+- Memory
+- Battery usage
+
+Implement:
+
+- Pagination
+- Lazy loading
+- Caching
+- Thumbnail generation
+- Background uploads where supported
+- Compression
+- Retry
+- Efficient rendering
+
+Do not load every file into memory simultaneously.
+
+---
+
+# 35. TESTING
+
+Create comprehensive tests.
+
+## Unit tests
+
+Test:
+
+- File validation
+- Pricing
+- Print settings
+- Page ranges
+- Copies
+- Order status transitions
+- Permissions
+- Coupons
+- Refund logic
+
+## Integration tests
+
+Test:
+
+- Authentication
+- Upload
+- Document management
+- Scanner
+- Search
+- Cloud sync
+- Shop registration
+- Shop search
+- Order creation
+- Order acceptance
+- Price approval
+- Payments
+- Notifications
+- Chat
+- Delivery
+
+## UI tests
+
+Test:
+
+- Navigation
+- Forms
+- Buttons
+- Dialogs
+- Upload
+- Sharing
+- Basket
+- Checkout
+- Shop workflows
+
+## Security tests
+
+Test:
+
+- Unauthorized document access
+- Cross-user data access
+- Shop access
+- Admin restrictions
+- File permissions
+- API abuse
+- Payment validation
+
+## Platform tests
+
+Test on real Android devices.
+
+Test:
+
+- WhatsApp installed
+- WhatsApp not installed
+- Multiple file sharing
+- Email apps
+- Large files
+- Permission denial
+- Offline
+- Poor network
+- App backgrounding
+- Android storage restrictions
+
+---
+
+# 36. PROJECT MANAGEMENT
+
+Create the following project documentation:
+
+- README.md
+- ARCHITECTURE.md
+- PROJECT_PLAN.md
+- FEATURE_CHECKLIST.md
+- DATABASE_SCHEMA.md
+- API_DOCUMENTATION.md
+- SECURITY.md
+- PRIVACY.md
+- INTEGRATIONS.md
+- ENVIRONMENT_SETUP.md
+- DEPLOYMENT.md
+- TESTING.md
+- CONTRIBUTING.md
+
+Maintain a project task checklist.
+
+Each feature must be marked:
+
+- Not started
+- In progress
+- Implemented
+- Tested
+- Verified
+
+Never mark a feature as complete merely because a screen exists.
+
+---
+
+# 37. ENVIRONMENT AND CONFIGURATION
+
+Create environment configurations:
+
+- Local development
+- Testing
+- Staging
+- Production
+
+Use environment variables.
+
+Provide:
+
+- Example environment file
+- Firebase configuration instructions
+- AI API configuration
+- Payment configuration
+- Maps configuration
+- Email configuration
+- WhatsApp integration configuration
+- Storage configuration
+
+Never commit real credentials.
+
+---
+
+# 38. DEVELOPMENT EXECUTION
+
+Do not attempt to generate the entire application in one giant code dump.
+
+Work systematically while maintaining the complete scope.
+
+## Step 1 — Inspect environment
+
+Determine:
+
+- Existing project
+- Files
+- Installed tools
+- SDKs
+- Current configuration
+
+If the project is empty, initialize it.
+
+Do not overwrite existing working code without inspection.
+
+## Step 2 — Create architecture
+
+Establish:
+
+- Folder structure
+- Modules
+- Navigation
+- State management
+- Database schema
+- API structure
+- Security model
+- Design system
+
+## Step 3 — Create foundation
+
+Implement:
+
+- Authentication
+- User profile
+- App navigation
+- Theme
+- Components
+- Error handling
+- Backend configuration
+
+## Step 4 — Implement customer document ecosystem
+
+Build:
+
+- Document vault
+- Upload
+- Folders
+- Preview
+- Search
+- Scanner
+- PDF tools
+- AI classification
+- OCR
+
+## Step 5 — Implement print system
+
+Build:
+
+- Basket
+- Print settings
+- Presets
+- Preview
+- Price calculator
+- Sharing
+
+## Step 6 — Implement shop ecosystem
+
+Build:
+
+- Registration
+- Profiles
+- Discovery
+- Saved shops
+- Shop services
+- Pricing
+
+## Step 7 — Implement marketplace
+
+Build:
+
+- Orders
+- Shop dashboard
+- Price approval
+- Statuses
+- Chat
+- Notifications
+
+## Step 8 — Implement payments and delivery
+
+Build:
+
+- Payment integration
+- Refunds
+- Receipts
+- Pickup
+- Delivery
+
+## Step 9 — Implement business tools
+
+Build:
+
+- Staff
+- Inventory
+- Printers
+- Analytics
+- Promotions
+- Loyalty
+
+## Step 10 — Implement admin
+
+Build the complete admin dashboard.
+
+## Step 11 — Integrations
+
+Integrate:
+
+- AI
+- Maps
+- Email
+- WhatsApp sharing
+- Payments
+- Push notifications
+
+## Step 12 — Testing
+
+Test complete user workflows.
+
+Fix bugs before moving forward.
+
+## Step 13 — Production readiness
+
+Prepare:
+
+- Android build
+- Web deployment
+- Production backend
+- Monitoring
+- Security review
+- Backup
+- Privacy policies
+- App release documentation
+
+---
+
+# 39. FEATURE ACCEPTANCE REQUIREMENTS
+
+The application is not considered complete unless the following complete workflows work.
+
+## Workflow 1: Upload and organize
+
+1. User logs in.
+2. User uploads multiple files.
+3. Upload progress is shown.
+4. Files appear in document vault.
+5. User creates folder.
+6. User moves files.
+7. User searches.
+8. User previews.
+9. User favourites.
+10. User downloads.
+11. User deletes.
+12. User restores.
+
+## Workflow 2: Scan
+
+1. User opens scanner.
+2. Captures document.
+3. Crops.
+4. Corrects.
+5. Adds pages.
+6. Rearranges.
+7. Creates PDF.
+8. OCR runs.
+9. Saves to folder.
+10. Search can find document text.
+
+## Workflow 3: Direct WhatsApp printing
+
+1. User selects documents.
+2. Adds to print basket.
+3. Configures printing.
+4. Selects saved shop.
+5. Prepares message.
+6. Shares files.
+7. WhatsApp opens.
+8. User selects recipient if needed.
+9. User sends.
+10. App records sharing activity where available.
+
+## Workflow 4: Email printing
+
+1. User selects documents.
+2. Configures print settings.
+3. Selects shop.
+4. Email is prepared.
+5. Recipient and subject populate.
+6. Attachments are added where supported.
+7. Email app opens.
+8. User sends.
+
+## Workflow 5: Marketplace order
+
+1. Customer discovers shop.
+2. Views services and prices.
+3. Selects documents.
+4. Configures printing.
+5. Chooses pickup or delivery.
+6. Submits order.
+7. Shop receives notification.
+8. Shop accepts.
+9. Shop confirms price.
+10. Customer approves.
+11. Customer pays.
+12. Shop prints.
+13. Shop marks ready.
+14. Customer receives notification.
+15. Customer collects.
+16. Order completes.
+17. Customer reviews shop.
+
+## Workflow 6: Shop operations
+
+1. Shop registers.
+2. Completes verification.
+3. Configures services.
+4. Configures pricing.
+5. Receives order.
+6. Accepts order.
+7. Downloads documents.
+8. Prints.
+9. Updates status.
+10. Notifies customer.
+11. Completes order.
+12. Revenue appears in analytics.
+
+## Workflow 7: Backup and sync
+
+1. User uploads a document.
+2. Cloud backup enabled.
+3. Document syncs.
+4. User logs in on another device.
+5. Document appears.
+6. Download works.
+7. Changes sync.
+8. Deleted files synchronize.
+9. Conflict handling works.
+
+## Workflow 8: Security
+
+1. User A uploads private document.
+2. User B cannot access it.
+3. Unauthenticated users cannot access it.
+4. Shop cannot access unrelated customer files.
+5. Shop can access only authorized order files.
+6. Admin permissions are restricted.
+7. Access rules are tested.
+
+---
+
+# 40. IMPORTANT INTEGRATION LIMITATIONS
+
+Handle these honestly.
+
+## WhatsApp
+
+Ordinary WhatsApp sharing may require user interaction to select a conversation and confirm sending.
+
+Implement the best supported native sharing experience.
+
+Do not promise automatic sending unless an authorized official integration supports it.
+
+## Email
+
+Email apps may impose attachment size limits.
+
+Handle large files with an appropriate secure alternative, while respecting the customer's privacy and sharing choices.
+
+## Payments
+
+Real payments require:
+
+- Provider account
+- Merchant approval
+- Credentials
+- Backend integration
+- Webhook verification
+- Testing
+
+Do not simulate payments in production.
+
+## Maps
+
+Maps require configuration and API credentials where applicable.
+
+## AI
+
+AI features require API configuration and must use secure backend calls.
+
+## Scanning
+
+Scanner performance depends on camera hardware and platform support.
+
+## Cloud backup
+
+Cloud storage may incur costs.
+
+Implement configurable storage plans and quotas.
+
+---
+
+# 41. FINAL DEVELOPMENT DIRECTIVE
+
+Begin by inspecting the current development environment.
+
+Then create the project structure and documentation.
+
+Create a master feature checklist containing every feature in this prompt.
+
+Build the application incrementally.
+
+Prioritize working functionality, security, architecture, user experience, and testability.
+
+Every screen must be connected to its real functionality.
+
+Every backend feature must have permission validation.
+
+Every integration must have proper configuration and error handling.
+
+Every feature must be tested before being marked complete.
+
+Maintain the complete product vision throughout development.
+
+If you reach a context or token limit, do not abandon the project or forget its architecture.
+
+Update the project documentation and checklist with:
+
+- What has been completed
+- What is currently in progress
+- Files created or modified
+- Bugs discovered
+- Integrations pending
+- Credentials/configuration required
+- Next implementation steps
+
+Then continue from the documented state in the next session.
+
+Do not restart unnecessarily.
+
+Do not replace working code with a new implementation without a strong reason.
+
+Do not claim completion unless the functionality is actually implemented and verified.
+
+---
+
+# 42. START NOW
+
+Start with:
+
+1. Inspect the existing project and environment.
+2. Determine the best implementation approach.
+3. Initialize the complete project architecture.
+4. Create the design system.
+5. Create the navigation structure.
+6. Create the database schema.
+7. Create backend configuration.
+8. Create authentication.
+9. Create the project documentation.
+10. Create the complete feature checklist.
+11. Begin implementing the first milestone.
+12. Run the application.
+13. Test the implemented functionality.
+14. Report exactly what works and what remains.
+
+The final goal is a complete, production-ready PrintReady ecosystem—not merely a concept, prototype, landing page, or visual demo.
+
+**Build PrintReady. Make it functional. Make it secure. Make it scalable. Make every feature work.**

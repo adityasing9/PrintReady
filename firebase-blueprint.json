@@ -1,0 +1,280 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Private user account profile and preferences. PII isolated to owner and admins.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "email": { "type": "string", "format": "email", "maxLength": 160 },
+        "phone": { "type": "string", "maxLength": 32 },
+        "role": { "type": "string", "enum": ["customer", "shop_owner", "shop_employee", "admin", "support"] },
+        "preferredLanguage": { "type": "string", "maxLength": 16 },
+        "theme": { "type": "string", "enum": ["light", "dark", "system"] },
+        "subscriptionPlan": { "type": "string", "enum": ["free", "premium"] },
+        "loyaltyPoints": { "type": "integer" },
+        "storageUsedBytes": { "type": "integer" },
+        "aiEnabled": { "type": "boolean" },
+        "cloudBackupEnabled": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "email", "role", "createdAt", "updatedAt"]
+    },
+    "Folder": {
+      "title": "Folder",
+      "description": "Customer document folder inside the private document vault.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "category": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "color": { "type": "string", "maxLength": 24 },
+        "parentId": { "type": "string", "maxLength": 128 },
+        "isFavourite": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "name", "category", "isFavourite", "createdAt", "updatedAt"]
+    },
+    "VaultDocument": {
+      "title": "VaultDocument",
+      "description": "Private customer document metadata, OCR text, tags, and version details.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "mimeType": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "extension": { "type": "string", "minLength": 1, "maxLength": 16 },
+        "sizeBytes": { "type": "integer" },
+        "pageCount": { "type": "integer" },
+        "folderId": { "type": "string", "maxLength": 128 },
+        "category": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "tags": { "type": "array" },
+        "ocrText": { "type": "string", "maxLength": 10000 },
+        "summary": { "type": "string", "maxLength": 1000 },
+        "checksum": { "type": "string", "maxLength": 128 },
+        "expiryDate": { "type": "string", "maxLength": 32 },
+        "version": { "type": "integer" },
+        "isFavourite": { "type": "boolean" },
+        "isTrashed": { "type": "boolean" },
+        "syncStatus": { "type": "string", "enum": ["local", "synced", "pending"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "name", "mimeType", "extension", "sizeBytes", "pageCount", "category", "isFavourite", "isTrashed", "version", "createdAt", "updatedAt"]
+    },
+    "PrintPreset": {
+      "title": "PrintPreset",
+      "description": "Reusable printing configuration preset.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "paperSize": { "type": "string", "enum": ["A4", "A3", "A5", "Letter", "Legal", "Custom"] },
+        "colorMode": { "type": "string", "enum": ["bw", "color"] },
+        "sides": { "type": "string", "enum": ["single", "double"] },
+        "orientation": { "type": "string", "enum": ["portrait", "landscape"] },
+        "copies": { "type": "integer" },
+        "pagesPerSheet": { "type": "integer" },
+        "binding": { "type": "string", "enum": ["none", "staple", "spiral", "hardcover", "lamination"] },
+        "isFavourite": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "name", "paperSize", "colorMode", "sides", "orientation", "copies", "createdAt", "updatedAt"]
+    },
+    "SavedShop": {
+      "title": "SavedShop",
+      "description": "Customer-saved printing shop entry (registered or unregistered local print shop).",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "shopName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "registeredShopId": { "type": "string", "maxLength": 128 },
+        "phone": { "type": "string", "maxLength": 32 },
+        "whatsapp": { "type": "string", "maxLength": 32 },
+        "email": { "type": "string", "maxLength": 160 },
+        "address": { "type": "string", "maxLength": 240 },
+        "group": { "type": "string", "maxLength": 40 },
+        "preferredContact": { "type": "string", "enum": ["whatsapp", "email", "marketplace", "phone"] },
+        "notes": { "type": "string", "maxLength": 500 },
+        "isFavourite": { "type": "boolean" },
+        "isDefault": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "shopName", "group", "preferredContact", "isFavourite", "createdAt", "updatedAt"]
+    },
+    "PrintShop": {
+      "title": "PrintShop",
+      "description": "Registered printing business listed in the PrintReady marketplace.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "ownerName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "address": { "type": "string", "minLength": 4, "maxLength": 240 },
+        "city": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "phone": { "type": "string", "maxLength": 32 },
+        "whatsapp": { "type": "string", "maxLength": 32 },
+        "email": { "type": "string", "maxLength": 160 },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "isOpen": { "type": "boolean" },
+        "pickupAvailable": { "type": "boolean" },
+        "deliveryAvailable": { "type": "boolean" },
+        "deliveryFee": { "type": "number" },
+        "turnaroundMinutes": { "type": "integer" },
+        "verificationStatus": { "type": "string", "enum": ["pending", "verified", "rejected", "suspended"] },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "integer" },
+        "services": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "name", "address", "city", "isOpen", "pickupAvailable", "deliveryAvailable", "verificationStatus", "createdAt", "updatedAt"]
+    },
+    "ShopInventoryItem": {
+      "title": "ShopInventoryItem",
+      "description": "Printing supply stock item belonging to a shop.",
+      "type": "object",
+      "properties": {
+        "shopId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "category": { "type": "string", "enum": ["paper", "ink", "toner", "photo_paper", "binding", "lamination", "other"] },
+        "quantity": { "type": "number" },
+        "unit": { "type": "string", "maxLength": 32 },
+        "reorderLevel": { "type": "number" },
+        "supplier": { "type": "string", "maxLength": 100 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["shopId", "name", "category", "quantity", "unit", "reorderLevel", "updatedAt"]
+    },
+    "PrintOrder": {
+      "title": "PrintOrder",
+      "description": "Marketplace digital printing order connecting a customer and a registered shop.",
+      "type": "object",
+      "properties": {
+        "orderNumber": { "type": "string", "minLength": 4, "maxLength": 40, "pattern": "^PR-[A-Z0-9\\-]+$" },
+        "customerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "customerName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "shopId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "shopOwnerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "shopName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft", "submitted", "received", "awaiting_shop_response", "accepted",
+            "rejected", "price_pending_approval", "approved", "payment_pending",
+            "paid", "printing", "quality_check", "ready_for_pickup",
+            "out_for_delivery", "delivered", "completed", "cancelled",
+            "refund_requested", "refunded"
+          ]
+        },
+        "fulfillmentType": { "type": "string", "enum": ["pickup", "delivery"] },
+        "estimatedTotal": { "type": "number" },
+        "confirmedTotal": { "type": "number" },
+        "paymentStatus": { "type": "string", "enum": ["unpaid", "pending", "verified", "refunded", "failed"] },
+        "itemCount": { "type": "integer" },
+        "totalPages": { "type": "integer" },
+        "specialInstructions": { "type": "string", "maxLength": 600 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["orderNumber", "customerId", "customerName", "shopId", "shopOwnerId", "shopName", "status", "fulfillmentType", "estimatedTotal", "paymentStatus", "itemCount", "totalPages", "createdAt", "updatedAt"]
+    },
+    "OrderMessage": {
+      "title": "OrderMessage",
+      "description": "Order-scoped chat message between customer and shop.",
+      "type": "object",
+      "properties": {
+        "orderId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "senderId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "senderName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "senderRole": { "type": "string", "enum": ["customer", "shop", "admin"] },
+        "text": { "type": "string", "minLength": 1, "maxLength": 1200 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["orderId", "senderId", "senderName", "senderRole", "text", "createdAt"]
+    },
+    "ShopReview": {
+      "title": "ShopReview",
+      "description": "Verified order review for a print shop.",
+      "type": "object",
+      "properties": {
+        "shopId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "orderId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "customerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "customerName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "rating": { "type": "integer" },
+        "comment": { "type": "string", "minLength": 1, "maxLength": 800 },
+        "verifiedOrder": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["shopId", "orderId", "customerId", "customerName", "rating", "comment", "verifiedOrder", "createdAt"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable privileged admin audit log.",
+      "type": "object",
+      "properties": {
+        "actorId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "actorEmail": { "type": "string", "maxLength": 160 },
+        "action": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "targetType": { "type": "string", "minLength": 2, "maxLength": 40 },
+        "targetId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "details": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["actorId", "action", "targetType", "targetId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user account profiles with isolated PII."
+    },
+    "/users/{userId}/folders/{folderId}": {
+      "schema": { "$ref": "#/entities/Folder" },
+      "description": "Private customer folders inside document vault."
+    },
+    "/users/{userId}/documents/{documentId}": {
+      "schema": { "$ref": "#/entities/VaultDocument" },
+      "description": "Private customer document vault entries."
+    },
+    "/users/{userId}/printPresets/{presetId}": {
+      "schema": { "$ref": "#/entities/PrintPreset" },
+      "description": "Customer reusable print presets."
+    },
+    "/users/{userId}/savedShops/{savedShopId}": {
+      "schema": { "$ref": "#/entities/SavedShop" },
+      "description": "Customer saved shops directory."
+    },
+    "/shops/{shopId}": {
+      "schema": { "$ref": "#/entities/PrintShop" },
+      "description": "Registered print shops in the PrintReady marketplace."
+    },
+    "/shops/{shopId}/inventory/{itemId}": {
+      "schema": { "$ref": "#/entities/ShopInventoryItem" },
+      "description": "Shop inventory tracking."
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/PrintOrder" },
+      "description": "Marketplace print orders between customers and shops."
+    },
+    "/orders/{orderId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/OrderMessage" },
+      "description": "Order-scoped chat messages."
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/ShopReview" },
+      "description": "Verified shop reviews."
+    },
+    "/auditLogs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Immutable administrative audit logs."
+    }
+  }
+}
