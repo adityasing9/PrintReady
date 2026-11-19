@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
-import { Download, Shield, Smartphone, Sparkles, Store, User } from 'lucide-react';
+import { Download, RefreshCw, Shield, Smartphone, Sparkles, Store, User } from 'lucide-react';
 import { usePrintReady } from '../../context/PrintReadyContext';
 import { formatFileSize } from '../../domain/fileValidation';
 import { PWAInstallButton } from '../PWAInstallButton';
+import {
+  checkForUpdate,
+  CURRENT_APP_VERSION,
+  installUpdate,
+  isNativeAndroid,
+  ReleaseInfo,
+} from '../../services/autoUpdateService';
 
 export function AccountSettingsView() {
   const {
@@ -21,6 +28,26 @@ export function AccountSettingsView() {
   const [displayName, setDisplayName] = useState(userProfile.displayName);
   const [phone, setPhone] = useState(userProfile.phone);
   const [language, setLanguage] = useState(userProfile.preferredLanguage);
+
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateRelease, setUpdateRelease] = useState<ReleaseInfo | null>(null);
+  const [updateStatusText, setUpdateStatusText] = useState<string>('');
+
+  const handleManualCheckUpdate = async () => {
+    setCheckingUpdate(true);
+    setUpdateStatusText('Checking GitHub Releases for updates...');
+    const release = await checkForUpdate();
+    setCheckingUpdate(false);
+    if (release && release.isNewer) {
+      setUpdateRelease(release);
+      setUpdateStatusText(`New update found: ${release.version}`);
+      notify('Update Found', `Version ${release.version} is available!`, 'success');
+    } else {
+      setUpdateRelease(null);
+      setUpdateStatusText(`You are on the latest version (v${CURRENT_APP_VERSION})`);
+      notify('Up to Date', `PrintReady v${CURRENT_APP_VERSION} is the latest version.`, 'info');
+    }
+  };
 
   const usedBytes = documents.filter((d) => !d.isTrashed).reduce((s, d) => s + d.sizeBytes, 0);
 
@@ -274,34 +301,72 @@ export function AccountSettingsView() {
 
       {/* Install Mobile/Desktop App & Direct Sharing Info */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Android App & In-App Auto Updater Card */}
         <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 flex flex-col justify-between gap-4">
           <div className="space-y-1.5">
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-              <Smartphone className="w-4 h-4 text-indigo-600" />
-              Install PrintReady App
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                <Smartphone className="w-4 h-4 text-emerald-600" />
+                Android App & Updates
+              </h3>
+              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                v{CURRENT_APP_VERSION}
+              </span>
+            </div>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              Add PrintReady to your phone or desktop home screen for instant camera scanning, offline document access, and one-tap sharing to print shops.
+              Official Android app signed with a permanent release keystore. Checks GitHub Releases for updates and installs with zero signature conflicts.
             </p>
+            {updateStatusText && (
+              <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 p-2 rounded-lg">
+                {updateStatusText}
+              </p>
+            )}
           </div>
-          <div>
-            <PWAInstallButton variant="card" />
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <button
+              type="button"
+              disabled={checkingUpdate}
+              onClick={handleManualCheckUpdate}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors shadow-sm disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${checkingUpdate ? 'animate-spin' : ''}`} />
+              {checkingUpdate ? 'Checking...' : 'Check for Updates'}
+            </button>
+            {updateRelease?.apkDownloadUrl && (
+              <a
+                href={updateRelease.apkDownloadUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 rounded-xl transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Download {updateRelease.version} APK
+              </a>
+            )}
+            <a
+              href={`https://github.com/adityasing9/PrintReady/releases`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              All Releases
+            </a>
           </div>
         </section>
 
         <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 flex flex-col justify-between gap-4">
           <div className="space-y-1.5">
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-              <Store className="w-4 h-4 text-indigo-600" />
-              Direct WhatsApp & Email Sharing
+              <Smartphone className="w-4 h-4 text-indigo-600" />
+              Install as Web PWA
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              PrintReady redirects directly to your own WhatsApp or Email app with your print instructions pre-filled—no online payment setup or third-party messaging keys required.
+              Add PrintReady to your phone or desktop browser home screen for instant camera scanning, offline document access, and one-tap sharing.
             </p>
           </div>
-          <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
-            Ready to use with any local print shop · Pay directly at the shop
-          </p>
+          <div>
+            <PWAInstallButton variant="card" />
+          </div>
         </section>
       </div>
     </div>

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PrintReady</string>
+    <string name="title_activity_main">PrintReady</string>
+    <string name="package_name">com.adityasing9.printready</string>
+    <string name="custom_url_scheme">com.adityasing9.printready</string>
+</resources>

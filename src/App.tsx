@@ -1,5 +1,6 @@
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LayoutShell } from './components/LayoutShell';
+import { AutoUpdatePrompt } from './components/AutoUpdatePrompt';
 import { AccountSettingsView } from './components/customer/AccountSettingsView';
 import { PrintQueueView } from './components/customer/PrintQueueView';
 import { SavedShopsView } from './components/customer/SavedShopsView';
@@ -33,6 +34,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <PrintReadyProvider>
+        <AutoUpdatePrompt />
         <LayoutShell>
           <CustomerAppRouter />
         </LayoutShell>
