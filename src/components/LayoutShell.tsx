@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { usePrintReady } from '../context/PrintReadyContext';
 import { PWAInstallButton } from './PWAInstallButton';
+import { AuthModal } from './AuthModal';
 
 interface NavItem {
   id: string;
@@ -49,6 +50,8 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
     markAllNotificationsRead,
     toasts,
     dismissToast,
+    isAuthModalOpen,
+    setIsAuthModalOpen,
   } = usePrintReady();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -158,16 +161,16 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
             className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors whitespace-nowrap"
           >
             <LogOut className="w-3.5 h-3.5" />
-            Sign Out
+            Sign Out ({userProfile.displayName})
           </button>
         ) : (
           <button
             type="button"
-            onClick={signInWithGoogle}
+            onClick={() => setIsAuthModalOpen(true)}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-indigo-700 dark:text-indigo-200 bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 rounded-lg transition-colors whitespace-nowrap"
           >
             <LogIn className="w-3.5 h-3.5" />
-            Sign In with Google
+            Sign In / Profile
           </button>
         )}
       </div>
@@ -284,7 +287,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
       {/* Mobile Customer Bottom Navigation Bar */}
       <nav
         aria-label="Mobile quick navigation"
-        className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-800 px-2 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))]"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-800 px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]"
       >
         <div className="grid grid-cols-5 gap-1">
           {mobileBottomTabs.map((item) => {
@@ -357,6 +360,9 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
           ))}
         </div>
       )}
+
+      {/* Account & Sign In Modal */}
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </div>
   );
 }

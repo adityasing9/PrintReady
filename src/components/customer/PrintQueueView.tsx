@@ -418,7 +418,7 @@ export function PrintQueueView() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-24">
+    <div className="space-y-6 max-w-5xl mx-auto pb-56 lg:pb-32">
       {/* Hero / Header */}
       <div className="bg-gradient-to-r from-indigo-900 to-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -833,9 +833,9 @@ export function PrintQueueView() {
         </div>
       )}
 
-      {/* Floating Bottom Send Bar */}
+      {/* Floating Bottom Send Bar - Elevated above mobile bottom navigation bar */}
       {selectedItems.length > 0 && (
-        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-8 sm:w-[500px] z-40 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md text-white border border-slate-700 shadow-2xl rounded-2xl p-4 transition-all animate-in fade-in slide-in-from-bottom-4">
+        <div className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] lg:bottom-6 left-3 right-3 sm:left-auto sm:right-8 sm:w-[480px] z-30 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md text-white border border-slate-700 shadow-2xl rounded-2xl p-3.5 sm:p-4 transition-all animate-in fade-in slide-in-from-bottom-4">
           <div className="flex items-center justify-between gap-3 mb-3">
             <div>
               <p className="text-xs text-slate-400">Ready to print at shop:</p>

@@ -23,9 +23,11 @@ export function AccountSettingsView() {
     orders,
     coupons,
     notify,
+    setIsAuthModalOpen,
   } = usePrintReady();
 
   const [displayName, setDisplayName] = useState(userProfile.displayName);
+  const [email, setEmail] = useState(userProfile.email || '');
   const [phone, setPhone] = useState(userProfile.phone);
   const [language, setLanguage] = useState(userProfile.preferredLanguage);
 
@@ -55,6 +57,7 @@ export function AccountSettingsView() {
     e.preventDefault();
     updateUserProfile({
       displayName: displayName.trim() || userProfile.displayName,
+      email: email.trim(),
       phone: phone.trim(),
       preferredLanguage: language,
     });
@@ -116,9 +119,10 @@ export function AccountSettingsView() {
               <input
                 id="acc-email"
                 type="email"
-                readOnly
-                value={userProfile.email}
-                className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-500"
+                placeholder="yourname@gmail.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -184,10 +188,10 @@ export function AccountSettingsView() {
               ) : (
                 <button
                   type="button"
-                  onClick={signInWithGoogle}
+                  onClick={() => setIsAuthModalOpen(true)}
                   className="px-3 py-1.5 font-medium text-white bg-indigo-700 hover:bg-indigo-800 rounded-lg whitespace-nowrap"
                 >
-                  Connect Google
+                  Connect Account
                 </button>
               )}
             </div>

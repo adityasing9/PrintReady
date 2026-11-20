@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut, User as FirebaseUser } from 'firebase/auth';
 import { auth, googleProvider, testFirestoreConnection } from '../firebase';
+import { isNativeAndroid } from '../services/autoUpdateService';
 import {
   deleteDocumentFromFirestore,
   loadUserVaultFromFirestore,
@@ -89,6 +90,8 @@ interface PrintReadyContextValue {
   updateUserProfile: (patch: Partial<UserProfile>) => void;
   signInWithGoogle: () => Promise<void>;
   signOutUser: () => Promise<void>;
+  isAuthModalOpen: boolean;
+  setIsAuthModalOpen: (open: boolean) => void;
 
   // Vault
   folders: VaultFolder[];
@@ -284,8 +287,12 @@ export function PrintReadyProvider({ children }: { children: React.ReactNode }) 
 
   const [integrations, setIntegrations] = useState<IntegrationStatus | null>(null);
   const [toasts, setToasts] = useState<ToastNotice[]>([]);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  const isCloudMode = Boolean(firebaseUser && firebaseUser.emailVerified);
+  const isCloudMode = Boolean(
+    (firebaseUser && firebaseUser.emailVerified) ||
+    (userProfile.email && userProfile.email.includes('@'))
+  );
 
   const notify = useCallback((title: string, description?: string, tone: ToastNotice['tone'] = 'info') => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -393,20 +400,25 @@ export function PrintReadyProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
+    if (isNativeAndroid()) {
+      setIsAuthModalOpen(true);
+      return;
+    }
     try {
       const result = await signInWithPopup(auth, googleProvider);
       notify('Signed in with Google', `Cloud sync active for ${result.user.email}`, 'success');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Google sign-in cancelled.';
-      notify('Sign-in unsuccessful', message, 'error');
+      console.warn('Google sign-in popup error, opening profile dialog:', error);
+      setIsAuthModalOpen(true);
     }
   }, [notify]);
 
   const signOutUser = useCallback(async () => {
     try {
-      await signOut(auth);
+      await signOut(auth).catch(() => {});
       setUserProfile(DEMO_USER_PROFILE);
-      notify('Signed out', 'Switched back to Demo Workspace mode.', 'info');
+      saveLocal('user_profile', DEMO_USER_PROFILE);
+      notify('Signed out', 'Switched back to Guest mode.', 'info');
     } catch (error) {
       notify('Sign-out error', error instanceof Error ? error.message : 'Unable to sign out.', 'error');
     }
@@ -416,13 +428,15 @@ export function PrintReadyProvider({ children }: { children: React.ReactNode }) 
     (patch: Partial<UserProfile>) => {
       setUserProfile((prev) => {
         const next = { ...prev, ...patch };
+        saveLocal('user_profile', next);
         if (isCloudMode && firebaseUser) {
           syncUserProfileToFirestore(next).catch(() => {});
         }
         return next;
       });
+      notify('Profile updated', 'Your account details have been saved.', 'success');
     },
-    [firebaseUser, isCloudMode]
+    [firebaseUser, isCloudMode, notify]
   );
 
   const addCustomCategory = useCallback((name: string) => {
@@ -1252,6 +1266,8 @@ export function PrintReadyProvider({ children }: { children: React.ReactNode }) 
       updateUserProfile,
       signInWithGoogle,
       signOutUser,
+      isAuthModalOpen,
+      setIsAuthModalOpen,
       folders,
       documents,
       customCategories,
@@ -1392,6 +1408,8 @@ export function PrintReadyProvider({ children }: { children: React.ReactNode }) 
       shops,
       signInWithGoogle,
       signOutUser,
+      isAuthModalOpen,
+      setIsAuthModalOpen,
       staff,
       submitReview,
       supportTickets,
