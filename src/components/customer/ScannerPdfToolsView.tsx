@@ -5,7 +5,9 @@ import {
   Camera,
   Download,
   FilePlus2,
+  FileText,
   Files,
+  Plus,
   RotateCw,
   Save,
   ScanLine,
@@ -16,7 +18,7 @@ import {
 import { usePrintReady } from '../../context/PrintReadyContext';
 import { DEFAULT_CATEGORIES } from '../../domain/types';
 import { parsePageRange } from '../../domain/printCalculator';
-import { saveFileBlob } from '../../utils/fileStorage';
+import { saveFileBlob, getFileBlob } from '../../utils/fileStorage';
 import {
   exportScansToPdf,
   mergePdfBuffers,
@@ -67,7 +69,7 @@ function createSampleScanCanvasDataUrl(pageNum: number): string {
 }
 
 export function ScannerPdfToolsView() {
-  const { folders, addDocument, addToBasket, setActiveTab, notify, userProfile } = usePrintReady();
+  const { documents, folders, addDocument, addToBasket, setActiveTab, notify, userProfile } = usePrintReady();
 
   const [mode, setMode] = useState<'scanner' | 'pdf-tools'>('scanner');
 
@@ -85,6 +87,7 @@ export function ScannerPdfToolsView() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scanFileRef = useRef<HTMLInputElement | null>(null);
+  const nativeCameraInputRef = useRef<HTMLInputElement | null>(null);
 
   // PDF Utilities state
   const [mergeFiles, setMergeFiles] = useState<File[]>([]);
@@ -114,8 +117,8 @@ export function ScannerPdfToolsView() {
     } catch (err) {
       setCameraError(
         err instanceof Error
-          ? `Camera unavailable (${err.message}). Import an image or generate a test scan page below.`
-          : 'Camera permission denied or unavailable on this device.'
+          ? `Camera stream unavailable (${err.message}). Use "Take Photo / Scan" or import an image below.`
+          : 'Camera permission denied or stream unavailable. Use "Take Photo / Scan" or import an image below.'
       );
     }
   };
@@ -262,9 +265,45 @@ export function ScannerPdfToolsView() {
     }
   };
 
+  // Add PDF from Vault to Merge List
+  const handleAddVaultDocToMerge = async (docId: string) => {
+    const doc = documents.find((d) => d.id === docId);
+    if (!doc) return;
+    try {
+      const blob = await getFileBlob(doc.id);
+      if (!blob) {
+        notify('File Not Found', `Document data for ${doc.name} could not be loaded from storage.`, 'error');
+        return;
+      }
+      const file = new File([blob], doc.name, { type: doc.mimeType || 'application/pdf' });
+      setMergeFiles((prev) => [...prev, file]);
+      notify('Added to Merge', `${doc.name} added to merge list.`, 'success');
+    } catch {
+      notify('Error', `Could not read ${doc.name}.`, 'error');
+    }
+  };
+
+  // Select PDF from Vault for Utility Tools
+  const handleSelectVaultDocForUtil = async (docId: string) => {
+    const doc = documents.find((d) => d.id === docId);
+    if (!doc) return;
+    try {
+      const blob = await getFileBlob(doc.id);
+      if (!blob) {
+        notify('File Not Found', `Document data for ${doc.name} could not be loaded from storage.`, 'error');
+        return;
+      }
+      const file = new File([blob], doc.name, { type: doc.mimeType || 'application/pdf' });
+      setUtilFile(file);
+      notify('Selected for Tools', `${doc.name} loaded.`, 'success');
+    } catch {
+      notify('Error', `Could not read ${doc.name}.`, 'error');
+    }
+  };
+
   const handleMergePdfs = async () => {
     if (mergeFiles.length < 2) {
-      notify('Select at least 2 PDFs', 'Upload two or more PDF files to merge.', 'warning');
+      notify('Select at least 2 PDFs', 'Upload or pick two or more PDF files to merge.', 'warning');
       return;
     }
     setPdfBusy(true);
@@ -272,8 +311,10 @@ export function ScannerPdfToolsView() {
       const buffers = await Promise.all(mergeFiles.map((f) => f.arrayBuffer()));
       const merged = await mergePdfBuffers(buffers);
       const outName = `Merged_${mergeFiles.length}_Docs_${Date.now().toString(36)}.pdf`;
-      triggerBlobDownload(merged, outName);
-      addDocument({
+      const blob = new Blob([merged.slice().buffer], { type: 'application/pdf' });
+      const previewDataUrl = URL.createObjectURL(blob);
+
+      const newDoc = addDocument({
         name: outName,
         mimeType: 'application/pdf',
         extension: 'pdf',
@@ -289,9 +330,18 @@ export function ScannerPdfToolsView() {
         isFavourite: false,
         isTrashed: false,
         syncStatus: 'local',
-        previewDataUrl: URL.createObjectURL(new Blob([merged.slice().buffer], { type: 'application/pdf' })),
+        previewDataUrl,
       });
-      notify('PDFs Merged', `${outName} downloaded and saved to your vault.`, 'success');
+
+      await saveFileBlob(newDoc.id, blob);
+      addToBasket(newDoc);
+      try {
+        triggerBlobDownload(merged, outName);
+      } catch (e) {
+        console.warn('triggerBlobDownload skipped or failed:', e);
+      }
+      notify('PDFs Merged Successfully', `${outName} saved to Vault and added to Print Queue!`, 'success');
+      setActiveTab('queue');
     } catch (err) {
       notify('Merge failed', err instanceof Error ? err.message : 'Ensure all files are valid unencrypted PDFs.', 'error');
     } finally {
@@ -317,14 +367,16 @@ export function ScannerPdfToolsView() {
       }
 
       const result = await processPdfUtility(buf, {
-        watermarkText,
+        watermarkText: watermarkText.trim(),
         addPageNumbers: addPageNums,
         rotateDegrees: rotateDeg,
         keepPageIndices,
       });
       const outName = utilFile.name.replace(/\.pdf$/i, '') + '_processed.pdf';
-      triggerBlobDownload(result, outName);
-      addDocument({
+      const blob = new Blob([result.slice().buffer], { type: 'application/pdf' });
+      const previewDataUrl = URL.createObjectURL(blob);
+
+      const newDoc = addDocument({
         name: outName,
         mimeType: 'application/pdf',
         extension: 'pdf',
@@ -340,9 +392,18 @@ export function ScannerPdfToolsView() {
         isFavourite: false,
         isTrashed: false,
         syncStatus: 'local',
-        previewDataUrl: URL.createObjectURL(new Blob([result.slice().buffer], { type: 'application/pdf' })),
+        previewDataUrl,
       });
-      notify('PDF Processed', `${outName} downloaded and added to vault.`, 'success');
+
+      await saveFileBlob(newDoc.id, blob);
+      addToBasket(newDoc);
+      try {
+        triggerBlobDownload(result, outName);
+      } catch (e) {
+        console.warn('triggerBlobDownload skipped or failed:', e);
+      }
+      notify('PDF Processed Successfully', `${outName} saved to Vault and added to Print Queue!`, 'success');
+      setActiveTab('queue');
     } catch (err) {
       notify('Processing error', err instanceof Error ? err.message : 'Could not process PDF.', 'error');
     } finally {
@@ -351,13 +412,13 @@ export function ScannerPdfToolsView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-48 lg:pb-24">
       {/* Mode Switcher */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">Document Scanner & PDF Utilities</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Capture multi-page scans with filters and OCR, or merge, split, rotate, and watermark PDFs locally.
+            Capture multi-page scans with camera or merge, split, rotate, and watermark PDFs locally.
           </p>
         </div>
         <div className="inline-flex p-1 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg">
@@ -392,14 +453,35 @@ export function ScannerPdfToolsView() {
           <div className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
+                {/* Native Device Camera Intent */}
+                <input
+                  ref={nativeCameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => {
+                    handleImportScanImages(e.target.files);
+                    e.target.value = '';
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => nativeCameraInputRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm rounded-lg whitespace-nowrap active:scale-95 transition-transform"
+                >
+                  <Camera className="w-4 h-4" />
+                  Take Photo / Scan
+                </button>
+
                 {!cameraActive ? (
                   <button
                     type="button"
                     onClick={startCamera}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-white bg-indigo-700 hover:bg-indigo-800 rounded-lg whitespace-nowrap"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg whitespace-nowrap"
                   >
-                    <Camera className="w-3.5 h-3.5" />
-                    Open Camera
+                    <ScanLine className="w-3.5 h-3.5" />
+                    Live Webcam
                   </button>
                 ) : (
                   <>
@@ -416,7 +498,7 @@ export function ScannerPdfToolsView() {
                       onClick={stopCamera}
                       className="px-3 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg whitespace-nowrap"
                     >
-                      Stop Camera
+                      Stop Live Camera
                     </button>
                   </>
                 )}
@@ -446,7 +528,7 @@ export function ScannerPdfToolsView() {
                   className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 rounded-lg whitespace-nowrap"
                 >
                   <FilePlus2 className="w-3.5 h-3.5" />
-                  Add Sample Scan
+                  Add Sample
                 </button>
               </div>
               <span className="text-xs font-mono tabular-nums text-slate-500">
@@ -490,7 +572,7 @@ export function ScannerPdfToolsView() {
                   <ScanLine className="w-8 h-8 text-slate-400 mx-auto" />
                   <p className="text-sm font-medium text-slate-700 dark:text-slate-300">No pages captured yet</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                    Open your camera, import a photo of a document, or click Add Sample Scan to test filters and multi-page PDF export.
+                    Tap "Take Photo / Scan" to snap documents using your device camera, or import photos from storage.
                   </p>
                 </div>
               )}
@@ -695,7 +777,7 @@ export function ScannerPdfToolsView() {
                   type="button"
                   disabled={exporting || pages.length === 0}
                   onClick={() => handleExportScanPdf(true)}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-medium text-white bg-indigo-700 hover:bg-indigo-800 disabled:opacity-50 rounded-lg"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-medium text-white bg-indigo-700 hover:bg-indigo-800 disabled:opacity-50 rounded-lg shadow-sm"
                 >
                   <Save className="w-3.5 h-3.5" />
                   {exporting ? 'Building PDF...' : 'Save PDF to Vault'}
@@ -717,60 +799,130 @@ export function ScannerPdfToolsView() {
         /* PDF Utilities Suite */
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* PDF Merge */}
-          <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-4">
-            <div className="flex items-center gap-2.5">
-              <Files className="w-5 h-5 text-indigo-700 dark:text-indigo-400" />
-              <div>
-                <h3 className="text-base font-semibold text-slate-900 dark:text-white">Merge Multiple PDFs</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Combine two or more PDF files locally in your browser via pdf-lib.
-                </p>
+          <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <Files className="w-5 h-5 text-indigo-700 dark:text-indigo-400" />
+                <div>
+                  <h3 className="text-base font-semibold text-slate-900 dark:text-white">Merge Multiple PDFs</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Combine two or more PDF files into a single document.
+                  </p>
+                </div>
               </div>
+              {mergeFiles.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setMergeFiles([])}
+                  className="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-950/30"
+                >
+                  Clear All
+                </button>
+              )}
             </div>
 
             <div>
               <label htmlFor="pdf-merge-input" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                Select PDF Files (2 or more)
+                Select PDF Files (tap repeatedly to add more)
               </label>
-              <input
-                id="pdf-merge-input"
-                type="file"
-                accept=".pdf,application/pdf"
-                multiple
-                onChange={(e) => setMergeFiles(Array.from(e.target.files || []))}
-                className="block w-full text-xs text-slate-600 dark:text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-700 dark:file:bg-indigo-950/60 dark:file:text-indigo-300"
-              />
+              <div className="flex flex-wrap gap-2 items-center">
+                <label className="cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 rounded-lg border border-indigo-200 dark:border-indigo-800 transition-colors">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>+ Choose Files from Device</span>
+                  <input
+                    id="pdf-merge-input"
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    multiple
+                    onChange={(e) => {
+                      if (e.target.files) {
+                        const filesToAdd = Array.from(e.target.files);
+                        setMergeFiles((prev) => [...prev, ...filesToAdd]);
+                      }
+                      e.target.value = '';
+                    }}
+                    className="hidden"
+                  />
+                </label>
+              </div>
             </div>
 
-            {mergeFiles.length > 0 && (
-              <ul className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                {mergeFiles.map((f, i) => (
-                  <li key={`${f.name}-${i}`} className="py-1.5 flex justify-between">
-                    <span className="truncate">{i + 1}. {f.name}</span>
-                    <span className="font-mono text-slate-400">{Math.round(f.size / 1024)} KB</span>
-                  </li>
-                ))}
-              </ul>
+            {/* Quick add from Vault / Queue */}
+            {documents.filter((d) => (d.extension === 'pdf' || d.mimeType === 'application/pdf') && !d.isTrashed).length > 0 && (
+              <div className="p-3 bg-slate-50 dark:bg-slate-950/50 rounded-lg border border-slate-200 dark:border-slate-800 space-y-1.5">
+                <span className="block text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                  Or add from your Print Queue / Vault:
+                </span>
+                <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+                  {documents
+                    .filter((d) => (d.extension === 'pdf' || d.mimeType === 'application/pdf') && !d.isTrashed)
+                    .slice(0, 8)
+                    .map((doc) => (
+                      <button
+                        key={doc.id}
+                        type="button"
+                        onClick={() => handleAddVaultDocToMerge(doc.id)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 rounded-md text-slate-700 dark:text-slate-200 truncate max-w-[200px]"
+                        title={`Add ${doc.name}`}
+                      >
+                        <Plus className="w-3 h-3 text-indigo-600 shrink-0" />
+                        <span className="truncate">{doc.name}</span>
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Selected Files List */}
+            {mergeFiles.length > 0 ? (
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center text-xs text-slate-500 font-medium">
+                  <span>Files to merge ({mergeFiles.length}):</span>
+                  <span className="text-[11px] text-slate-400">Order: top to bottom</span>
+                </div>
+                <ul className="divide-y divide-slate-100 dark:divide-slate-800 bg-slate-50 dark:bg-slate-950/30 rounded-lg border border-slate-200 dark:border-slate-800 p-2 text-xs max-h-48 overflow-y-auto">
+                  {mergeFiles.map((f, i) => (
+                    <li key={`${f.name}-${i}`} className="py-2 px-1 flex items-center justify-between gap-2">
+                      <span className="truncate flex-1 font-medium text-slate-800 dark:text-slate-200">
+                        {i + 1}. {f.name}
+                      </span>
+                      <span className="font-mono text-slate-400 text-[11px] whitespace-nowrap">
+                        {Math.round(f.size / 1024)} KB
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setMergeFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                        className="p-1 text-slate-400 hover:text-red-600 rounded transition-colors"
+                        title="Remove file"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 italic">No PDF files selected yet. Pick at least 2 PDFs above to merge.</p>
             )}
 
             <button
               type="button"
               disabled={pdfBusy || mergeFiles.length < 2}
               onClick={handleMergePdfs}
-              className="px-4 py-2.5 text-xs font-medium text-white bg-indigo-700 hover:bg-indigo-800 disabled:opacity-50 rounded-lg"
+              className="w-full sm:w-auto px-5 py-2.5 text-xs font-semibold text-white bg-indigo-700 hover:bg-indigo-800 disabled:opacity-50 rounded-lg shadow-sm transition-transform active:scale-95"
             >
-              {pdfBusy ? 'Merging...' : 'Merge & Save to Vault'}
+              {pdfBusy ? 'Merging PDFs...' : `Merge ${mergeFiles.length >= 2 ? `${mergeFiles.length} PDFs` : 'PDFs'} & Save to Vault`}
             </button>
           </section>
 
           {/* Split, Rotate, Watermark, Page Numbers */}
-          <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-4">
+          <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 sm:p-6 space-y-4">
             <div>
               <h3 className="text-base font-semibold text-slate-900 dark:text-white">
                 Split, Rotate, Watermark & Number Pages
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Process any authorized PDF file and save the output directly to your document vault.
+                Process any PDF document, customize pages, and save directly to your Vault & Print Queue.
               </p>
             </div>
 
@@ -778,14 +930,55 @@ export function ScannerPdfToolsView() {
               <label htmlFor="pdf-util-file" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                 Source PDF File
               </label>
-              <input
-                id="pdf-util-file"
-                type="file"
-                accept=".pdf,application/pdf"
-                onChange={(e) => setUtilFile(e.target.files?.[0] || null)}
-                className="block w-full text-xs text-slate-600 dark:text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-700 dark:file:bg-indigo-950/60 dark:file:text-indigo-300"
-              />
+              <div className="flex flex-wrap gap-2 items-center">
+                <label className="cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 rounded-lg border border-indigo-200 dark:border-indigo-800 transition-colors">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Choose from Device</span>
+                  <input
+                    id="pdf-util-file"
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    onChange={(e) => setUtilFile(e.target.files?.[0] || null)}
+                    className="hidden"
+                  />
+                </label>
+                {utilFile && (
+                  <span className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate max-w-xs">
+                    📄 {utilFile.name} ({Math.round(utilFile.size / 1024)} KB)
+                  </span>
+                )}
+              </div>
             </div>
+
+            {/* Quick select from Queue / Vault */}
+            {documents.filter((d) => (d.extension === 'pdf' || d.mimeType === 'application/pdf') && !d.isTrashed).length > 0 && (
+              <div className="p-3 bg-slate-50 dark:bg-slate-950/50 rounded-lg border border-slate-200 dark:border-slate-800 space-y-1.5">
+                <span className="block text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                  Or select a document from your Print Queue / Vault:
+                </span>
+                <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+                  {documents
+                    .filter((d) => (d.extension === 'pdf' || d.mimeType === 'application/pdf') && !d.isTrashed)
+                    .slice(0, 8)
+                    .map((doc) => (
+                      <button
+                        key={doc.id}
+                        type="button"
+                        onClick={() => handleSelectVaultDocForUtil(doc.id)}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs border rounded-md truncate max-w-[200px] transition-colors ${
+                          utilFile?.name === doc.name
+                            ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300'
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-indigo-500'
+                        }`}
+                        title={`Select ${doc.name}`}
+                      >
+                        <FileText className="w-3 h-3 text-indigo-600 shrink-0" />
+                        <span className="truncate">{doc.name}</span>
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -847,9 +1040,9 @@ export function ScannerPdfToolsView() {
               type="button"
               disabled={pdfBusy || !utilFile}
               onClick={handleProcessUtility}
-              className="px-4 py-2.5 text-xs font-medium text-white bg-indigo-700 hover:bg-indigo-800 disabled:opacity-50 rounded-lg"
+              className="w-full sm:w-auto px-5 py-2.5 text-xs font-semibold text-white bg-indigo-700 hover:bg-indigo-800 disabled:opacity-50 rounded-lg shadow-sm transition-transform active:scale-95"
             >
-              {pdfBusy ? 'Processing...' : 'Process & Export PDF'}
+              {pdfBusy ? 'Processing PDF...' : 'Process & Export PDF to Vault'}
             </button>
           </section>
         </div>
