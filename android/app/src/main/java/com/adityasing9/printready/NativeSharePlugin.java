@@ -23,6 +23,19 @@ import java.util.List;
 @CapacitorPlugin(name = "NativeShare")
 public class NativeSharePlugin extends Plugin {
 
+    private String normalizePhone(String rawPhone) {
+        if (rawPhone == null) return null;
+        String digits = rawPhone.replaceAll("[^0-9]", "");
+        if (digits.isEmpty()) return null;
+        // If 10 digits (standard Indian mobile number, e.g. 9876543210), prepend country code 91
+        if (digits.length() == 10) {
+            digits = "91" + digits;
+        } else if (digits.length() == 11 && digits.startsWith("0")) {
+            digits = "91" + digits.substring(1);
+        }
+        return digits;
+    }
+
     @PluginMethod
     public void shareFiles(PluginCall call) {
         try {
@@ -33,6 +46,7 @@ public class NativeSharePlugin extends Plugin {
             }
 
             String target = call.getString("target", "chooser"); // "whatsapp", "email", "chooser"
+            String phone = call.getString("phone", "");
             String email = call.getString("email", "");
             String subject = call.getString("subject", "Print Request - Documents Attached");
 
@@ -53,17 +67,19 @@ public class NativeSharePlugin extends Plugin {
             }
 
             ArrayList<Uri> uriList = new ArrayList<>();
-            String primaryMimeType = null;
+            boolean allPdf = true;
+            boolean allImage = true;
 
             for (int i = 0; i < filesArray.length(); i++) {
                 JSONObject fileObj = filesArray.getJSONObject(i);
                 String rawName = fileObj.getString("name");
                 String base64Data = fileObj.getString("base64");
-                String mimeType = fileObj.optString("mimeType", "*/*");
+                String mimeType = fileObj.optString("mimeType", "*/*").toLowerCase();
 
-                if (primaryMimeType == null && mimeType != null && !mimeType.isEmpty() && !mimeType.equals("*/*")) {
-                    primaryMimeType = mimeType;
-                }
+                boolean isPdf = mimeType.contains("pdf") || rawName.toLowerCase().endsWith(".pdf");
+                boolean isImg = mimeType.startsWith("image/") || rawName.toLowerCase().endsWith(".jpg") || rawName.toLowerCase().endsWith(".jpeg") || rawName.toLowerCase().endsWith(".png");
+                if (!isPdf) allPdf = false;
+                if (!isImg) allImage = false;
 
                 byte[] bytes = Base64.decode(base64Data, Base64.DEFAULT);
                 String safeName = i + "_" + rawName.replaceAll("[\\\\/:*?\"<>|]", "_");
@@ -72,6 +88,7 @@ public class NativeSharePlugin extends Plugin {
                 fos.write(bytes);
                 fos.flush();
                 fos.close();
+                destFile.setReadable(true, false);
 
                 Uri contentUri = FileProvider.getUriForFile(
                     context,
@@ -86,14 +103,21 @@ public class NativeSharePlugin extends Plugin {
                 return;
             }
 
+            String mimeTypeToSet = "*/*";
+            if (allPdf) {
+                mimeTypeToSet = "application/pdf";
+            } else if (allImage) {
+                mimeTypeToSet = "image/*";
+            }
+
             Intent intent;
             if (uriList.size() > 1) {
                 intent = new Intent(Intent.ACTION_SEND_MULTIPLE);
-                intent.setType("*/*");
+                intent.setType(mimeTypeToSet);
                 intent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, uriList);
             } else {
                 intent = new Intent(Intent.ACTION_SEND);
-                intent.setType(primaryMimeType != null ? primaryMimeType : "*/*");
+                intent.setType(mimeTypeToSet);
                 intent.putExtra(Intent.EXTRA_STREAM, uriList.get(0));
             }
 
@@ -128,6 +152,17 @@ public class NativeSharePlugin extends Plugin {
                     for (Uri u : uriList) {
                         context.grantUriPermission(pkg, u, Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     }
+                }
+
+                // Automatically target the selected / saved shop WhatsApp number
+                String cleanPhone = normalizePhone(phone);
+                if (cleanPhone != null && !cleanPhone.isEmpty()) {
+                    String jid = cleanPhone + "@s.whatsapp.net";
+                    intent.putExtra("jid", jid);
+                    intent.putExtra("jids", jid);
+                    intent.putExtra(Intent.EXTRA_PHONE_NUMBER, cleanPhone);
+                    intent.putExtra("phone", cleanPhone);
+                    intent.putExtra("address", cleanPhone);
                 }
             } else if ("email".equalsIgnoreCase(target)) {
                 if (email != null && !email.trim().isEmpty()) {
@@ -166,6 +201,7 @@ public class NativeSharePlugin extends Plugin {
             } catch (Exception launchEx) {
                 // Fallback to system chooser if direct package failed
                 intent.setPackage(null);
+                intent.removeExtra("jid");
                 Intent chooser = Intent.createChooser(intent, "Send Files to Print Shop");
                 chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
