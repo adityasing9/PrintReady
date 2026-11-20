@@ -1,5 +1,5 @@
-export const CURRENT_APP_VERSION = '1.0.8';
-export const CURRENT_VERSION_CODE = 9;
+export const CURRENT_APP_VERSION = '1.0.9';
+export const CURRENT_VERSION_CODE = 10;
 export const GITHUB_REPO = 'adityasing9/PrintReady';
 
 export interface ReleaseInfo {
