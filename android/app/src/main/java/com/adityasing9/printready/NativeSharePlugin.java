@@ -1,12 +1,17 @@
 package com.adityasing9.printready;
 
 import android.content.ClipData;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Base64;
+import android.widget.Toast;
 import androidx.core.content.FileProvider;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
@@ -17,6 +22,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +40,20 @@ public class NativeSharePlugin extends Plugin {
             digits = "91" + digits.substring(1);
         }
         return digits;
+    }
+
+    private String resolveMimeType(String safeName, String fallbackMime) {
+        String lower = safeName.toLowerCase();
+        if (lower.endsWith(".pdf")) return "application/pdf";
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+        if (lower.endsWith(".png")) return "image/png";
+        if (lower.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        if (lower.endsWith(".doc")) return "application/msword";
+        if (lower.endsWith(".pptx")) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+        if (lower.endsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        if (lower.endsWith(".txt")) return "text/plain";
+        if (fallbackMime != null && !fallbackMime.isEmpty() && !fallbackMime.equals("*/*")) return fallbackMime;
+        return "*/*";
     }
 
     @PluginMethod
@@ -186,11 +206,6 @@ public class NativeSharePlugin extends Plugin {
             try {
                 if ("whatsapp".equalsIgnoreCase(target) && intent.getPackage() != null) {
                     getActivity().startActivity(intent);
-                } else if ("email".equalsIgnoreCase(target)) {
-                    Intent chooser = Intent.createChooser(intent, "Send Files to Print Shop");
-                    chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    getActivity().startActivity(chooser);
                 } else {
                     Intent chooser = Intent.createChooser(intent, "Send Files to Print Shop");
                     chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -210,6 +225,181 @@ public class NativeSharePlugin extends Plugin {
             }
         } catch (Exception e) {
             call.reject("Failed to share files: " + e.getMessage(), e);
+        }
+    }
+
+    @PluginMethod
+    public void viewFile(PluginCall call) {
+        try {
+            String rawName = call.getString("name", "document.pdf");
+            String base64Data = call.getString("base64");
+            String mimeType = call.getString("mimeType", "*/*");
+
+            if (base64Data == null || base64Data.isEmpty()) {
+                call.reject("No data provided");
+                return;
+            }
+
+            Context context = getContext();
+            File sharedDir = new File(context.getCacheDir(), "shared_files");
+            if (!sharedDir.exists()) {
+                sharedDir.mkdirs();
+            }
+
+            byte[] bytes = Base64.decode(base64Data, Base64.DEFAULT);
+            String safeName = rawName.replaceAll("[\\\\/:*?\"<>|]", "_");
+            File destFile = new File(sharedDir, safeName);
+            FileOutputStream fos = new FileOutputStream(destFile);
+            fos.write(bytes);
+            fos.flush();
+            fos.close();
+            destFile.setReadable(true, false);
+
+            Uri contentUri = FileProvider.getUriForFile(
+                context,
+                context.getPackageName() + ".fileprovider",
+                destFile
+            );
+
+            String resolvedMime = resolveMimeType(safeName, mimeType);
+
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setDataAndType(contentUri, resolvedMime);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+            ClipData clipData = ClipData.newUri(context.getContentResolver(), safeName, contentUri);
+            intent.setClipData(clipData);
+
+            Intent chooser = Intent.createChooser(intent, "Open " + safeName);
+            chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getActivity().startActivity(chooser);
+
+            call.resolve(new JSObject().put("success", true));
+        } catch (Exception e) {
+            call.reject("Error opening file: " + e.getMessage(), e);
+        }
+    }
+
+    @PluginMethod
+    public void downloadFile(PluginCall call) {
+        try {
+            String rawName = call.getString("name", "document.pdf");
+            String base64Data = call.getString("base64");
+            String mimeType = call.getString("mimeType", "application/octet-stream");
+
+            if (base64Data == null || base64Data.isEmpty()) {
+                call.reject("No data provided");
+                return;
+            }
+
+            byte[] bytes = Base64.decode(base64Data, Base64.DEFAULT);
+            Context context = getContext();
+            String safeName = rawName.replaceAll("[\\\\/:*?\"<>|]", "_");
+            String resolvedMime = resolveMimeType(safeName, mimeType);
+
+            boolean saved = false;
+            String savedLocation = "Downloads/PrintReady/" + safeName;
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.MediaColumns.DISPLAY_NAME, safeName);
+                values.put(MediaStore.MediaColumns.MIME_TYPE, resolvedMime);
+                values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/PrintReady");
+
+                Uri uri = context.getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                if (uri != null) {
+                    OutputStream os = context.getContentResolver().openOutputStream(uri);
+                    if (os != null) {
+                        os.write(bytes);
+                        os.flush();
+                        os.close();
+                        saved = true;
+                    }
+                }
+            } else {
+                File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                File printReadyDir = new File(downloadsDir, "PrintReady");
+                if (!printReadyDir.exists()) printReadyDir.mkdirs();
+                File dest = new File(printReadyDir, safeName);
+                FileOutputStream fos = new FileOutputStream(dest);
+                fos.write(bytes);
+                fos.flush();
+                fos.close();
+                saved = true;
+                savedLocation = dest.getAbsolutePath();
+            }
+
+            if (saved) {
+                final String toastMsg = "Saved " + safeName + " to Downloads/PrintReady";
+                getActivity().runOnUiThread(() -> Toast.makeText(context, toastMsg, Toast.LENGTH_LONG).show());
+                call.resolve(new JSObject().put("success", true).put("path", savedLocation));
+            } else {
+                call.reject("Failed to write file to Downloads directory");
+            }
+        } catch (Exception e) {
+            call.reject("Download failed: " + e.getMessage(), e);
+        }
+    }
+
+    @PluginMethod
+    public void downloadFiles(PluginCall call) {
+        try {
+            JSArray filesArray = call.getArray("files");
+            if (filesArray == null || filesArray.length() == 0) {
+                call.reject("No files provided");
+                return;
+            }
+
+            Context context = getContext();
+            int count = 0;
+
+            for (int i = 0; i < filesArray.length(); i++) {
+                JSONObject fileObj = filesArray.getJSONObject(i);
+                String rawName = fileObj.getString("name");
+                String base64Data = fileObj.getString("base64");
+                String mimeType = fileObj.optString("mimeType", "application/octet-stream");
+
+                byte[] bytes = Base64.decode(base64Data, Base64.DEFAULT);
+                String safeName = rawName.replaceAll("[\\\\/:*?\"<>|]", "_");
+                String resolvedMime = resolveMimeType(safeName, mimeType);
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    ContentValues values = new ContentValues();
+                    values.put(MediaStore.MediaColumns.DISPLAY_NAME, safeName);
+                    values.put(MediaStore.MediaColumns.MIME_TYPE, resolvedMime);
+                    values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/PrintReady");
+
+                    Uri uri = context.getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                    if (uri != null) {
+                        OutputStream os = context.getContentResolver().openOutputStream(uri);
+                        if (os != null) {
+                            os.write(bytes);
+                            os.flush();
+                            os.close();
+                            count++;
+                        }
+                    }
+                } else {
+                    File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                    File printReadyDir = new File(downloadsDir, "PrintReady");
+                    if (!printReadyDir.exists()) printReadyDir.mkdirs();
+                    File dest = new File(printReadyDir, safeName);
+                    FileOutputStream fos = new FileOutputStream(dest);
+                    fos.write(bytes);
+                    fos.flush();
+                    fos.close();
+                    count++;
+                }
+            }
+
+            final int savedCount = count;
+            final String toastMsg = "Saved " + savedCount + " file(s) to Downloads/PrintReady";
+            getActivity().runOnUiThread(() -> Toast.makeText(context, toastMsg, Toast.LENGTH_LONG).show());
+            call.resolve(new JSObject().put("success", true).put("count", savedCount));
+        } catch (Exception e) {
+            call.reject("Download error: " + e.getMessage(), e);
         }
     }
 }

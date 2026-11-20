@@ -27,7 +27,13 @@ import {
 import { PDFDocument } from 'pdf-lib';
 import { usePrintReady } from '../../context/PrintReadyContext';
 import { formatFileSize } from '../../domain/fileValidation';
-import { dispatchPrintJob } from '../../services/fileSharingService';
+import {
+  dispatchPrintJob,
+  downloadFileToDevice,
+  downloadMultipleFilesToDevice,
+  isNativeAndroid,
+  viewFileOnDevice,
+} from '../../services/fileSharingService';
 import {
   ColorMode,
   DEFAULT_PRINT_SETTINGS,
@@ -91,6 +97,17 @@ export function PrintQueueView() {
 
   // Expanded item settings accordion
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+
+  // File Preview Modal state
+  const [previewModalDoc, setPreviewModalDoc] = useState<{
+    id: string;
+    name: string;
+    blob: Blob;
+    url: string;
+    isImage: boolean;
+    isPdf: boolean;
+    mimeType: string;
+  } | null>(null);
 
   // Computed selection
   const selectedItems = useMemo(
@@ -196,9 +213,27 @@ export function PrintQueueView() {
   const handlePreview = async (documentId: string, name: string) => {
     const blob = await getFileBlob(documentId);
     if (blob) {
+      const isImg = blob.type.startsWith('image/') || /\.(jpe?g|png|webp|gif|bmp)$/i.test(name);
+      const isPdf = blob.type === 'application/pdf' || /\.pdf$/i.test(name);
       const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      setPreviewModalDoc({
+        id: documentId,
+        name,
+        blob,
+        url,
+        isImage: isImg,
+        isPdf,
+        mimeType: blob.type || (isPdf ? 'application/pdf' : isImg ? 'image/jpeg' : 'application/octet-stream'),
+      });
+
+      // On Android native, also immediately open in system viewer if PDF/DOCX for best fidelity
+      if (isNativeAndroid() && !isImg) {
+        try {
+          await viewFileOnDevice(name, blob);
+        } catch (e) {
+          console.warn('Native view error:', e);
+        }
+      }
     } else {
       notify('Preview unavailable', `Could not load local file for ${name}.`, 'warning');
     }
@@ -207,22 +242,38 @@ export function PrintQueueView() {
   const handleDownload = async (documentId: string, name: string) => {
     const blob = await getFileBlob(documentId);
     if (blob) {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      try {
+        await downloadFileToDevice(name, blob);
+        notify('Download Complete', `${name} saved to Downloads folder.`, 'success');
+      } catch (err) {
+        notify('Download Failed', err instanceof Error ? err.message : 'Could not save file.', 'error');
+      }
     } else {
       notify('Download failed', 'File not found in local cache.', 'error');
     }
   };
 
   const handleDownloadAllSelected = async () => {
+    if (selectedItems.length === 0) {
+      notify('No files selected', 'Select at least one file from the queue to download.', 'warning');
+      return;
+    }
+    const filesToDownload: { name: string; blob: Blob }[] = [];
     for (const item of selectedItems) {
-      await handleDownload(item.documentId, item.documentName);
+      const blob = await getFileBlob(item.documentId);
+      if (blob) {
+        filesToDownload.push({ name: item.documentName, blob });
+      }
+    }
+    if (filesToDownload.length > 0) {
+      try {
+        await downloadMultipleFilesToDevice(filesToDownload);
+        notify('Downloads Complete', `Saved ${filesToDownload.length} file(s) to Downloads folder.`, 'success');
+      } catch (err) {
+        notify('Download Failed', err instanceof Error ? err.message : 'Could not save files.', 'error');
+      }
+    } else {
+      notify('Download failed', 'No file data found in local storage.', 'error');
     }
   };
 
@@ -1028,6 +1079,115 @@ export function PrintQueueView() {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* File Preview Modal */}
+      {previewModalDoc && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in"
+          onClick={() => {
+            if (previewModalDoc.url) URL.revokeObjectURL(previewModalDoc.url);
+            setPreviewModalDoc(null);
+          }}
+        >
+          <div
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2.5 truncate mr-2">
+                <FileText className="w-5 h-5 text-indigo-600 shrink-0" />
+                <div className="truncate">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                    {previewModalDoc.name}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 font-mono">
+                    {previewModalDoc.mimeType || 'Document'} · {Math.round(previewModalDoc.blob.size / 1024)} KB
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (previewModalDoc.url) URL.revokeObjectURL(previewModalDoc.url);
+                  setPreviewModalDoc(null);
+                }}
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-4 flex items-center justify-center bg-slate-100 dark:bg-slate-950/60 min-h-[260px] max-h-[60vh]">
+              {previewModalDoc.isImage ? (
+                <img
+                  src={previewModalDoc.url}
+                  alt={previewModalDoc.name}
+                  className="max-h-full max-w-full object-contain rounded-lg shadow-sm"
+                />
+              ) : previewModalDoc.isPdf ? (
+                <div className="w-full text-center space-y-4 py-8">
+                  <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center mx-auto text-indigo-600">
+                    <FileCheck className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{previewModalDoc.name}</p>
+                    <p className="text-xs text-slate-500 mt-1">PDF document verified and ready for printing.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => viewFileOnDevice(previewModalDoc.name, previewModalDoc.blob)}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-sm transition-transform active:scale-95"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Open in PDF Viewer
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center space-y-3 py-8">
+                  <FileText className="w-12 h-12 text-slate-400 mx-auto" />
+                  <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{previewModalDoc.name}</p>
+                  <p className="text-xs text-slate-500">Document ready for processing.</p>
+                  <button
+                    type="button"
+                    onClick={() => viewFileOnDevice(previewModalDoc.name, previewModalDoc.blob)}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-sm"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Open with Office / App
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-900">
+              <button
+                type="button"
+                onClick={async () => {
+                  await downloadFileToDevice(previewModalDoc.name, previewModalDoc.blob);
+                  notify('Downloaded', `Saved ${previewModalDoc.name} to Downloads.`, 'success');
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Save to Downloads
+              </button>
+              <button
+                type="button"
+                onClick={() => viewFileOnDevice(previewModalDoc.name, previewModalDoc.blob)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                Open / Share
+              </button>
             </div>
           </div>
         </div>

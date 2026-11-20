@@ -16,6 +16,22 @@ interface NativeSharePluginInterface {
     email?: string;
     subject?: string;
   }): Promise<{ success: boolean; count?: number }>;
+
+  downloadFile(options: {
+    name: string;
+    mimeType?: string;
+    base64: string;
+  }): Promise<{ success: boolean; path?: string }>;
+
+  downloadFiles(options: {
+    files: ShareFileInput[];
+  }): Promise<{ success: boolean; count?: number }>;
+
+  viewFile(options: {
+    name: string;
+    mimeType?: string;
+    base64: string;
+  }): Promise<{ success: boolean }>;
 }
 
 const NativeShare = registerPlugin<NativeSharePluginInterface>('NativeShare');
@@ -168,3 +184,71 @@ export async function dispatchPrintJob(options: DispatchPrintJobOptions): Promis
     message: `${blobsWithNames.length} file(s) saved to your device for printing.`,
   };
 }
+
+/**
+ * Downloads / saves a single file directly to user device storage.
+ * On Android, saves to MediaStore Downloads/PrintReady folder.
+ */
+export async function downloadFileToDevice(name: string, blob: Blob): Promise<void> {
+  if (isNativeAndroid()) {
+    const base64 = await blobToBase64(blob);
+    await NativeShare.downloadFile({
+      name,
+      mimeType: blob.type || 'application/octet-stream',
+      base64,
+    });
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+/**
+ * Downloads multiple files to device storage in batch.
+ */
+export async function downloadMultipleFilesToDevice(files: { name: string; blob: Blob }[]): Promise<void> {
+  if (files.length === 0) return;
+  if (isNativeAndroid()) {
+    const filesForNative: ShareFileInput[] = [];
+    for (const f of files) {
+      const base64 = await blobToBase64(f.blob);
+      filesForNative.push({
+        name: f.name,
+        mimeType: f.blob.type || 'application/octet-stream',
+        base64,
+      });
+    }
+    await NativeShare.downloadFiles({ files: filesForNative });
+    return;
+  }
+  for (const f of files) {
+    await downloadFileToDevice(f.name, f.blob);
+  }
+}
+
+/**
+ * Views or opens a file on device.
+ * On Android, launches the system viewer (Drive PDF Viewer, Gallery, Office).
+ * On Web, opens a preview window.
+ */
+export async function viewFileOnDevice(name: string, blob: Blob): Promise<void> {
+  if (isNativeAndroid()) {
+    const base64 = await blobToBase64(blob);
+    await NativeShare.viewFile({
+      name,
+      mimeType: blob.type || 'application/octet-stream',
+      base64,
+    });
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+

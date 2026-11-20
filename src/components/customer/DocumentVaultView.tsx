@@ -20,6 +20,8 @@ import { usePrintReady } from '../../context/PrintReadyContext';
 import { detectDuplicates, formatFileSize, validateUploadFile } from '../../domain/fileValidation';
 import { DEFAULT_CATEGORIES, VaultDocument } from '../../domain/types';
 import { createPrintableSamplePdf, triggerBlobDownload } from '../../utils/pdfTools';
+import { downloadFileToDevice } from '../../services/fileSharingService';
+import { getFileBlob } from '../../utils/fileStorage';
 
 type VaultScope = 'all' | 'recent' | 'favourites' | 'duplicates' | 'trash' | string;
 
@@ -283,23 +285,23 @@ export function DocumentVaultView() {
   };
 
   const handleDownloadDocument = async (docItem: VaultDocument) => {
-    if (docItem.previewDataUrl && docItem.previewDataUrl.startsWith('blob:')) {
-      const a = document.createElement('a');
-      a.href = docItem.previewDataUrl;
-      a.download = docItem.name;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      return;
+    try {
+      let blob = await getFileBlob(docItem.id);
+      if (!blob) {
+        const bytes = await createPrintableSamplePdf(docItem.name, [
+          `Category: ${docItem.category}`,
+          `Pages: ${docItem.pageCount}`,
+          `Summary: ${docItem.summary}`,
+          '',
+          ...(docItem.ocrText ? docItem.ocrText.split(/\.\s+/) : ['PrintReady Vault Document Copy']),
+        ]);
+        blob = new Blob([bytes.buffer as ArrayBuffer], { type: 'application/pdf' });
+      }
+      await downloadFileToDevice(docItem.name.endsWith('.pdf') ? docItem.name : `${docItem.name}.pdf`, blob);
+      notify('Downloaded', `Saved ${docItem.name} to Downloads.`, 'success');
+    } catch (err) {
+      notify('Download failed', err instanceof Error ? err.message : 'Could not download document.', 'error');
     }
-    const bytes = await createPrintableSamplePdf(docItem.name, [
-      `Category: ${docItem.category}`,
-      `Pages: ${docItem.pageCount}`,
-      `Summary: ${docItem.summary}`,
-      '',
-      ...(docItem.ocrText ? docItem.ocrText.split(/\.\s+/) : ['PrintReady Vault Document Copy']),
-    ]);
-    triggerBlobDownload(bytes, docItem.name.endsWith('.pdf') ? docItem.name : `${docItem.name}.pdf`);
   };
 
   const activeDocFresh = selectedDoc ? documents.find((d) => d.id === selectedDoc.id) || null : null;
