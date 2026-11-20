@@ -1,11 +1,49 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <rect width="512" height="512" rx="112" fill="#4338ca"/>
-  <g fill="none" stroke="#ffffff" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M164 188V124a20 20 0 0 1 20-20h144a20 20 0 0 1 20 20v64"/>
-    <rect x="116" y="188" width="280" height="148" rx="28"/>
-    <path d="M164 288h184v100a20 20 0 0 1-20 20H184a20 20 0 0 1-20-20V288Z" fill="#4338ca"/>
-    <line x1="204" y1="336" x2="308" y2="336"/>
-    <line x1="204" y1="372" x2="272" y2="372"/>
-    <circle cx="348" cy="236" r="10" fill="#ffffff" stroke="none"/>
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3730A3"/>
+      <stop offset="100%" stop-color="#4F46E5"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+
+  <!-- Top Paper -->
+  <g filter="url(#shadow)">
+    <rect x="186" y="80" width="140" height="150" rx="16" fill="#FFFFFF"/>
+    <rect x="210" y="112" width="92" height="8" rx="4" fill="#C7D2FE"/>
+    <rect x="210" y="132" width="92" height="8" rx="4" fill="#C7D2FE"/>
+    <rect x="210" y="152" width="92" height="8" rx="4" fill="#C7D2FE"/>
+    <rect x="210" y="172" width="60" height="8" rx="4" fill="#C7D2FE"/>
+  </g>
+
+  <!-- Bottom Paper -->
+  <g filter="url(#shadow)">
+    <rect x="186" y="270" width="140" height="150" rx="16" fill="#FFFFFF"/>
+    <rect x="210" y="320" width="92" height="8" rx="4" fill="#C7D2FE"/>
+    <rect x="210" y="340" width="92" height="8" rx="4" fill="#C7D2FE"/>
+    <rect x="210" y="360" width="50" height="8" rx="4" fill="#C7D2FE"/>
+  </g>
+
+  <!-- Ready Checkmark Badge -->
+  <g filter="url(#shadow)">
+    <circle cx="295" cy="385" r="28" fill="#FFFFFF"/>
+    <circle cx="295" cy="385" r="24" fill="#10B981"/>
+    <path d="M285 385 L292 392 L306 377" fill="none" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Printer Chassis -->
+  <g filter="url(#shadow)">
+    <rect x="120" y="195" width="272" height="116" rx="26" fill="#FFFFFF"/>
+    <rect x="124" y="280" width="264" height="27" rx="14" fill="#F1F5F9"/>
+    <rect x="176" y="196" width="160" height="10" rx="5" fill="#4F46E5"/>
+    <rect x="156" y="246" width="200" height="18" rx="9" fill="#0F172A"/>
+    <rect x="145" y="218" width="34" height="6" rx="3" fill="#6366F1"/>
+    <circle cx="355" cy="221" r="10" fill="#06B6D4" opacity="0.35"/>
+    <circle cx="355" cy="221" r="6" fill="#22D3EE"/>
   </g>
 </svg>

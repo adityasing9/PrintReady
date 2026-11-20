@@ -89,9 +89,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
           onClick={() => handleNavClick('queue')}
           className="text-lg font-bold tracking-tight text-slate-900 dark:text-white font-display whitespace-nowrap shrink-0 flex items-center gap-2.5"
         >
-          <span className="w-7 h-7 rounded-lg bg-indigo-700 text-white flex items-center justify-center">
-            <Printer className="w-4 h-4" />
-          </span>
+          <img src="/icon.svg" alt="PrintReady Logo" className="w-7 h-7 rounded-lg object-contain shadow-sm" />
           PrintReady
         </button>
         <button
